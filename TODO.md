@@ -1,10 +1,10 @@
 In order
 
-- [ ] Orient mice to movement direction
 - [ ] Main menu
 - [ ] Game over / Score menu
 - [ ] UI ( Current score, time, and collected targets )
 - [ ] Player model
+- [ ] Orient mice to movement direction
 - [ ] Gravity
 - [ ] Camera collisions
 - [ ] Power ups

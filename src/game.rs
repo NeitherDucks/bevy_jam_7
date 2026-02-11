@@ -13,8 +13,6 @@ impl Plugin for GamePlugin {
         app.init_state::<AppState>()
             .register_type::<GameState>()
             .add_sub_state::<PlayingState>()
-            .register_type::<GameDifficulty>()
-            .init_resource::<GameDifficulty>()
             .init_resource::<GameState>()
             .add_systems(OnEnter(AppState::Playing), init_game)
             .add_systems(
@@ -26,7 +24,6 @@ impl Plugin for GamePlugin {
         app.add_systems(
             Update,
             (
-                draw_gizmo,
                 bevy::dev_tools::states::log_transitions::<AppState>,
                 bevy::dev_tools::states::log_transitions::<PlayingState>,
             ),
@@ -36,11 +33,13 @@ impl Plugin for GamePlugin {
 
 #[derive(Clone, Debug, Default, PartialEq, Eq, Hash, States)]
 pub enum AppState {
-    MainMenu,
     #[default]
+    MainMenu,
+    SettingsMenu,
     Loading,
     EnvironmentSetup,
     Playing,
+    ScoreMenu,
 }
 
 #[derive(Clone, Debug, Default, PartialEq, Eq, Hash, SubStates)]
@@ -49,6 +48,7 @@ pub enum PlayingState {
     #[default]
     Playing,
     Paused,
+    SettingsMenu,
     GameOver,
 }
 
@@ -77,17 +77,6 @@ impl GameState {
 
         self.timer
             .set_duration(std::time::Duration::from_secs(new_duration));
-    }
-}
-
-#[derive(Resource, Reflect)]
-pub struct GameDifficulty {
-    difficulty: u16,
-}
-
-impl Default for GameDifficulty {
-    fn default() -> Self {
-        Self { difficulty: 1 }
     }
 }
 
@@ -182,12 +171,4 @@ pub fn get_random_position_on_navmesh<'a>(
             },
         )
         .ok()
-}
-
-fn draw_gizmo(mut gizmos: Gizmos) {
-    gizmos.circle(
-        Isometry3d::from_rotation(Quat::from_rotation_x(90.0f32.to_radians())),
-        135.0,
-        Color::WHITE,
-    );
 }

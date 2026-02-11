@@ -2,6 +2,7 @@ pub mod env;
 pub mod game;
 pub mod god;
 pub mod loader;
+pub mod menus;
 pub mod physics;
 pub mod player;
 pub mod target;
@@ -24,6 +25,7 @@ fn main() {
         player::PlayerPlugin,
         target::TargetPlugin,
         game::GamePlugin,
+        menus::MenusPlugin,
     ));
 
     #[cfg(feature = "dev")]
