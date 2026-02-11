@@ -1,6 +1,6 @@
 use bevy::{input_focus::InputFocus, prelude::*};
 
-use crate::game::{AppState, PlayingState};
+use crate::game::{AppState, GameSettings, PlayingState};
 
 pub struct MenusPlugin;
 
@@ -25,7 +25,8 @@ impl Plugin for MenusPlugin {
             .add_observer(on_play_click)
             .add_observer(on_settings_click)
             .add_observer(on_main_menu_click)
-            .add_observer(on_quit_click);
+            .add_observer(on_quit_click)
+            .add_observer(on_settings_changed);
     }
 }
 
@@ -98,7 +99,7 @@ fn setup_main_menu(mut commands: Commands, fonts: Res<Fonts>) {
 #[derive(Component)]
 struct SettingsMenuTag;
 
-fn setup_settings_menu(mut commands: Commands, fonts: Res<Fonts>) {
+fn setup_settings_menu(mut commands: Commands, fonts: Res<Fonts>, settings: Res<GameSettings>) {
     commands.spawn((SettingsMenuTag, Camera2d));
     commands.spawn((
         SettingsMenuTag,
@@ -110,29 +111,136 @@ fn setup_settings_menu(mut commands: Commands, fonts: Res<Fonts>) {
                 justify_content: JustifyContent::Center,
                 ..Default::default()
             },
-            children![(
+            children![settings_ui(&fonts, &settings)],
+        ),
+    ));
+}
+
+#[allow(clippy::too_many_lines)]
+fn settings_ui(fonts: &Fonts, settings: &GameSettings) -> impl Bundle {
+    (
+        Node {
+            width: percent(60),
+            height: percent(70),
+            flex_direction: FlexDirection::Column,
+            align_items: AlignItems::Center,
+            justify_content: JustifyContent::SpaceBetween,
+            ..Default::default()
+        },
+        children![
+            title("Settings", fonts.blue_winter.clone()),
+            (
                 Node {
-                    width: percent(50),
-                    height: percent(40),
-                    display: Display::Flex,
-                    flex_direction: FlexDirection::Column,
+                    width: percent(100),
+                    height: percent(80),
+                    display: Display::Grid,
+                    grid_template_columns: vec![
+                        RepeatedGridTrack::percent(1, 50.0),
+                        RepeatedGridTrack::percent(3, 16.66),
+                    ],
+                    grid_template_rows: RepeatedGridTrack::px(4, 50.0),
+                    row_gap: px(36),
+                    column_gap: px(24),
                     align_items: AlignItems::Center,
                     justify_content: JustifyContent::SpaceBetween,
                     ..Default::default()
                 },
                 children![
-                    title("Settings", fonts.blue_winter.clone()),
+                    text("Vertical sensitivity", fonts.blue_winter.clone(), 32.0),
                     button(
-                        "Back",
+                        "<",
                         fonts.blue_winter.clone(),
-                        200,
                         50,
-                        UiEvents::MainMenu
+                        50,
+                        UiEvents::SettingsChange(settings.cam_x(-0.1)),
                     ),
-                ]
-            )],
-        ),
-    ));
+                    text(
+                        format!("{:^5.1}", settings.camera_x_sensitivity),
+                        fonts.blue_winter.clone(),
+                        32.0
+                    ),
+                    button(
+                        ">",
+                        fonts.blue_winter.clone(),
+                        50,
+                        50,
+                        UiEvents::SettingsChange(settings.cam_x(0.1)),
+                    ),
+                    // -----------------------------------------------------------------
+                    text("Horizontal sensitivity", fonts.blue_winter.clone(), 32.0),
+                    button(
+                        "<",
+                        fonts.blue_winter.clone(),
+                        50,
+                        50,
+                        UiEvents::SettingsChange(settings.cam_y(-0.1)),
+                    ),
+                    text(
+                        format!("{:^5.1}", settings.camera_y_sensitivity),
+                        fonts.blue_winter.clone(),
+                        32.0
+                    ),
+                    button(
+                        ">",
+                        fonts.blue_winter.clone(),
+                        50,
+                        50,
+                        UiEvents::SettingsChange(settings.cam_y(0.1)),
+                    ),
+                    // -----------------------------------------------------------------
+                    text("Music volume", fonts.blue_winter.clone(), 32.0),
+                    button(
+                        "<",
+                        fonts.blue_winter.clone(),
+                        50,
+                        50,
+                        UiEvents::SettingsChange(settings.music(-5.0)),
+                    ),
+                    text(
+                        format!("{:^5.1}", settings.music_volume),
+                        fonts.blue_winter.clone(),
+                        32.0
+                    ),
+                    button(
+                        ">",
+                        fonts.blue_winter.clone(),
+                        50,
+                        50,
+                        UiEvents::SettingsChange(settings.music(5.0)),
+                    ),
+                    // -----------------------------------------------------------------
+                    text("SFX volume", fonts.blue_winter.clone(), 32.0),
+                    button(
+                        "<",
+                        fonts.blue_winter.clone(),
+                        50,
+                        50,
+                        UiEvents::SettingsChange(settings.sfx(-5.0)),
+                    ),
+                    text(
+                        format!("{:^5.1}", settings.sfx_volume),
+                        fonts.blue_winter.clone(),
+                        32.0
+                    ),
+                    button(
+                        ">",
+                        fonts.blue_winter.clone(),
+                        50,
+                        50,
+                        UiEvents::SettingsChange(settings.sfx(5.0)),
+                    ),
+                ],
+            ),
+            padding(UiRect::bottom(px(50))),
+            button(
+                "Back",
+                fonts.blue_winter.clone(),
+                200,
+                50,
+                UiEvents::MainMenu
+            ),
+        ],
+    )
 }
 
 #[derive(Component)]
@@ -159,6 +267,7 @@ enum UiEvents {
     Settings,
     MainMenu,
     Quit,
+    SettingsChange(GameSettings),
 }
 
 #[derive(Event)]
@@ -189,10 +298,29 @@ fn on_quit_click(_event: On<OnQuitClicked>, mut exit: MessageWriter<AppExit>) {
     exit.write(AppExit::Success);
 }
 
+#[derive(Event)]
+struct OnSettingsChanged(GameSettings);
+
+fn on_settings_changed(
+    event: On<OnSettingsChanged>,
+    mut settings: ResMut<GameSettings>,
+    mut next_state: ResMut<NextState<AppState>>,
+) {
+    *settings = GameSettings {
+        camera_x_sensitivity: event.0.camera_x_sensitivity.clamp(0.0, 2.0),
+        camera_y_sensitivity: event.0.camera_y_sensitivity.clamp(0.0, 2.0),
+        music_volume: event.0.music_volume.clamp(0.0, 100.0),
+        sfx_volume: event.0.sfx_volume.clamp(0.0, 100.0),
+    };
+
+    // I'm lazy (forces refresh of the UI)
+    next_state.set(AppState::SettingsMenu);
+}
+
 // ---------------------------------------------------------------------------------
 
 fn button(
-    text: &'static str,
+    text: impl Into<String>,
     font: Handle<Font>,
     width: u32,
     height: u32,
@@ -227,7 +355,7 @@ fn button(
     )
 }
 
-fn title(text: &'static str, font: Handle<Font>) -> impl Bundle {
+fn title(text: impl Into<String>, font: Handle<Font>) -> impl Bundle {
     (
         Node {
             margin: UiRect::bottom(px(100)),
@@ -245,6 +373,32 @@ fn title(text: &'static str, font: Handle<Font>) -> impl Bundle {
             TextShadow::default(),
         )],
     )
+}
+
+fn text(text: impl Into<String>, font: Handle<Font>, font_size: f32) -> impl Bundle {
+    (
+        Node {
+            padding: UiRect::all(px(10)),
+            ..Default::default()
+        },
+        children![(
+            Text::new(text),
+            TextFont {
+                font,
+                font_size,
+                ..default()
+            },
+            TextColor(Color::srgb(0.9, 0.9, 0.9)),
+            TextShadow::default(),
+        )],
+    )
+}
+
+fn padding(padding: UiRect) -> impl Bundle {
+    Node {
+        padding,
+        ..Default::default()
+    }
 }
 
 const NORMAL_BUTTON: Color = Color::srgb(0.15, 0.15, 0.15);
@@ -283,6 +437,9 @@ fn button_system(
                     UiEvents::Settings => commands.trigger(OnSettingsClicked),
                     UiEvents::MainMenu => commands.trigger(OnMainMenuClicked),
                     UiEvents::Quit => commands.trigger(OnQuitClicked),
+                    UiEvents::SettingsChange(game_settings) => {
+                        commands.trigger(OnSettingsChanged(*game_settings));
+                    }
                 }
             }
             Interaction::Hovered => {

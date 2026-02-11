@@ -14,6 +14,7 @@ impl Plugin for GamePlugin {
             .register_type::<GameState>()
             .add_sub_state::<PlayingState>()
             .init_resource::<GameState>()
+            .init_resource::<GameSettings>()
             .add_systems(OnEnter(AppState::Playing), init_game)
             .add_systems(
                 Update,
@@ -50,6 +51,55 @@ pub enum PlayingState {
     Paused,
     SettingsMenu,
     GameOver,
+}
+
+#[derive(Resource, Clone, Copy)]
+pub struct GameSettings {
+    pub camera_x_sensitivity: f32,
+    pub camera_y_sensitivity: f32,
+    pub music_volume: f32,
+    pub sfx_volume: f32,
+}
+
+impl Default for GameSettings {
+    fn default() -> Self {
+        Self {
+            camera_x_sensitivity: 1.0,
+            camera_y_sensitivity: 0.2,
+            music_volume: 50.0,
+            sfx_volume: 50.0,
+        }
+    }
+}
+
+impl GameSettings {
+    pub fn cam_x(&self, v: f32) -> Self {
+        Self {
+            camera_x_sensitivity: self.camera_x_sensitivity + v,
+            ..*self
+        }
+    }
+
+    pub fn cam_y(&self, v: f32) -> Self {
+        Self {
+            camera_y_sensitivity: self.camera_y_sensitivity + v,
+            ..*self
+        }
+    }
+
+    pub fn music(&self, v: f32) -> Self {
+        Self {
+            music_volume: self.music_volume + v,
+            ..*self
+        }
+    }
+
+    pub fn sfx(&self, v: f32) -> Self {
+        Self {
+            sfx_volume: self.sfx_volume + v,
+            ..*self
+        }
+    }
 }
 
 #[derive(Resource, Reflect)]
