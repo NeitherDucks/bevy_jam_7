@@ -4,7 +4,10 @@ use avian3d::{
 };
 use bevy::prelude::*;
 
-use crate::PlayingState;
+use crate::{
+    game::PlayingState,
+    player::{Player, PlayerHitEntities},
+};
 
 pub struct PhysicsPlugin;
 
@@ -35,13 +38,20 @@ fn disable_physics(mut time: ResMut<Time<Physics>>) {
 
 fn run_move_and_slide(
     query: Query<
-        (Entity, &mut Transform, &mut LinearVelocity, &Collider),
+        (
+            Entity,
+            &mut Transform,
+            &mut LinearVelocity,
+            &Collider,
+            Has<Player>,
+        ),
         With<CustomPositionIntegration>,
     >,
+    mut player: Single<&mut PlayerHitEntities>,
     move_and_slide: MoveAndSlide,
     time: Res<Time>,
 ) {
-    for (entity, mut transform, mut lin_vel, collider) in query {
+    for (entity, mut transform, mut lin_vel, collider, is_player) in query {
         let MoveAndSlideOutput {
             position,
             projected_velocity,
@@ -53,7 +63,13 @@ fn run_move_and_slide(
             time.delta(),
             &MoveAndSlideConfig::default(),
             &SpatialQueryFilter::from_excluded_entities([entity]),
-            |_| MoveAndSlideHitResponse::Accept,
+            |hit| {
+                if is_player {
+                    player.0.insert(hit.entity);
+                }
+
+                MoveAndSlideHitResponse::Accept
+            },
         );
 
         transform.translation = position.f32();
@@ -71,8 +87,8 @@ pub struct MovementAcceleration(pub Scalar);
 #[derive(Component)]
 pub struct MovementDampingFactor(pub Scalar);
 
-#[derive(Component)]
-struct JumpImpulse(pub Scalar);
+// #[derive(Component)]
+// struct JumpImpulse(pub Scalar);
 
-#[derive(Component)]
-struct MaxSlopeAngle(pub Scalar);
+// #[derive(Component)]
+// struct MaxSlopeAngle(pub Scalar);

@@ -1,14 +1,30 @@
+In order
+
+- [ ] Orient mice to movement direction
+- [ ] Main menu
+- [ ] Game over / Score menu
+- [ ] UI ( Current score, time, and collected targets )
+- [ ] Player model
+- [ ] Gravity
+- [ ] Camera collisions
+- [ ] Power ups
+
 In no order
 
-- [ ] Timer
+- [x] Timer
+- [x] Timer end
+- [ ] Game over animations
+- [x] Score
+- [ ] Load rig
+- [ ] UI
 - [ ] Jump ?
+- [ ] Gravity
 - [ ] Camera-Ground interaction
-- [ ] Targets AI
+- [x] Targets "AI"
 - [ ] Powerups
 - [ ] Camera juice
 - [ ] Cat
 - [ ] Targets UVMap2
-- [ ] Score
 - [ ] Main Menu
 - [ ] Main Menu / Score Board env + lighting
 - [ ] Score Board

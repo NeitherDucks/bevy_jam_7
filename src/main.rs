@@ -1,4 +1,7 @@
 pub mod env;
+pub mod game;
+pub mod god;
+pub mod loader;
 pub mod physics;
 pub mod player;
 pub mod target;
@@ -14,13 +17,14 @@ fn main() {
             ..default()
         }),
         bevy_framepace::FramepacePlugin,
+        bevy_rand::prelude::EntropyPlugin::<bevy_prng::ChaCha20Rng>::default(),
+        loader::LoaderPlugin,
         physics::PhysicsPlugin,
         env::EnvironmentPlugin,
         player::PlayerPlugin,
         target::TargetPlugin,
-    ))
-    .init_state::<AppState>()
-    .add_sub_state::<PlayingState>();
+        game::GamePlugin,
+    ));
 
     #[cfg(feature = "dev")]
     app.add_plugins((
@@ -28,31 +32,8 @@ fn main() {
         bevy::remote::http::RemoteHttpPlugin::default(),
         bevy_inspector_egui::bevy_egui::EguiPlugin::default(),
         bevy_inspector_egui::quick::WorldInspectorPlugin::default(),
+        bevy_inspector_egui::quick::ResourceInspectorPlugin::<game::GameState>::default(),
     ));
-    #[cfg(feature = "dev")]
-    app.add_systems(
-        Update,
-        (
-            bevy::dev_tools::states::log_transitions::<AppState>,
-            bevy::dev_tools::states::log_transitions::<PlayingState>,
-        ),
-    );
 
     app.run();
-}
-
-#[derive(Clone, Debug, Default, PartialEq, Eq, Hash, States)]
-enum AppState {
-    MainMenu,
-    #[default]
-    Loading,
-    Playing,
-}
-
-#[derive(Clone, Debug, Default, PartialEq, Eq, Hash, SubStates)]
-#[source(AppState = AppState::Playing)]
-enum PlayingState {
-    #[default]
-    Playing,
-    Paused,
 }

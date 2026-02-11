@@ -1,13 +1,14 @@
 use avian3d::{math::AdjustPrecision, prelude::*};
 use bevy::{
+    platform::collections::HashSet,
     prelude::*,
     window::{CursorGrabMode, CursorOptions},
 };
 use bevy_enhanced_input::prelude::*;
-use bevy_landmass::Character3dBundle;
+// use bevy_landmass::Character3dBundle;
 
 use crate::{
-    AppState, PlayingState,
+    game::{AppState, PlayingState},
     physics::{MovementAcceleration, MovementDampingFactor},
 };
 
@@ -48,6 +49,7 @@ fn setup(
         Transform::from_xyz(0.0, 0.5, 0.0),
         Name::new("Player"),
         Player,
+        PlayerHitEntities(HashSet::new()),
         CharacterController,
         RigidBody::Kinematic,
         Collider::cuboid(1.0, 1.0, 1.0),
@@ -126,7 +128,7 @@ fn disable_controls(mut commands: Commands, player: Single<Entity, With<Player>>
 
 /// Tag for the Player
 #[derive(Component)]
-struct Player;
+pub struct Player;
 
 /// Tag for the Camera
 #[derive(Component)]
@@ -169,6 +171,9 @@ struct GrabMousePlease(bool);
 
 #[derive(Component)]
 struct CharacterController;
+
+#[derive(Component)]
+pub struct PlayerHitEntities(pub HashSet<Entity>);
 
 fn apply_movement(
     movement: On<Fire<Movement>>,
@@ -221,9 +226,9 @@ fn apply_rotation(
     anchor_x.rotation = Quat::from_euler(EulerRot::YXZ, 0.0, pitch, 0.0);
 }
 
-fn apply_jump(jump: On<Fire<Jump>>) {
-    // TODO: Jump ??
-}
+// fn apply_jump(jump: On<Fire<Jump>>) {
+//     // TODO: Jump ??
+// }
 
 fn apply_toggle_menu(
     _toggle: On<Start<ToggleMenu>>,
