@@ -139,11 +139,13 @@ impl GameState {
     fn next_difficulty(&mut self) {
         self.difficulty += 1;
         self.total_targets = 10 + (self.difficulty - 1) * 4;
+        self.aquired_targets = 0;
 
         let new_duration = (120 - (u64::from(self.difficulty) * 10)).max(30);
 
         self.timer
             .set_duration(std::time::Duration::from_secs(new_duration));
+        self.timer.reset();
     }
 }
 
@@ -301,12 +303,18 @@ fn check_for_hit(
     targets: Query<Entity, With<Target>>,
     powerups: Query<Entity, With<Powerup>>,
     mut game_state: ResMut<GameState>,
+    mut next_state: ResMut<NextState<AppState>>,
 ) {
     for entity in player.0.drain() {
         if targets.contains(entity) {
             game_state.aquired_targets += 1;
             game_state.score += 100;
             commands.entity(entity).despawn();
+
+            if game_state.aquired_targets == game_state.total_targets {
+                info!("Player won the round!");
+                next_state.set(AppState::Loading);
+            }
         } else if powerups.contains(entity) {
             // TODO: Power ups
             commands.entity(entity).despawn();

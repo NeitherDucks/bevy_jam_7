@@ -3,8 +3,9 @@ In order
 - [x] Main menu
 - [x] Game over / Score menu
 - [x] Pause menu
-- [ ] Win condition
+- [x] Win condition
 - [x] UI ( Current score, time, and collected targets )
+- [ ] Center timer correctly
 - [ ] Player model
 - [ ] Orient mice to movement direction
 - [ ] Gravity
