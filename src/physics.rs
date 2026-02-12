@@ -59,7 +59,7 @@ fn run_move_and_slide(
             collider,
             transform.translation.adjust_precision(),
             transform.rotation.adjust_precision(),
-            lin_vel.0,
+            lin_vel.0 + Vec3::new(0.0, -9.8, 0.0),
             time.delta(),
             &MoveAndSlideConfig::default(),
             &SpatialQueryFilter::from_excluded_entities([entity]),
@@ -72,8 +72,14 @@ fn run_move_and_slide(
             },
         );
 
-        transform.translation = position.f32();
+        transform.translation = position;
         lin_vel.0 = projected_velocity;
+
+        // In case the player or target drops out of the map somehow
+        if transform.translation.y < -100.0 {
+            transform.translation = Vec3::ZERO;
+            lin_vel.0 = Vec3::ZERO;
+        }
     }
 }
 

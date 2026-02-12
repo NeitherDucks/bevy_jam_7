@@ -5,15 +5,16 @@ In order
 - [x] Pause menu
 - [x] Win condition
 - [x] UI ( Current score, time, and collected targets )
-- [ ] Center timer correctly
+  - [x] Center timer correctly
 - [ ] Player model
 - [ ] Orient mice to movement direction
-- [ ] Gravity
-  - [ ] Check if the player is below ground and make them respawn
+- [x] Gravity
+  - [x] Check if the player is below ground and make them respawn
 - [ ] Camera collisions
 - [ ] Power ups
 - [ ] Better UI ( Icon for targets, Juice )
 - [ ] Lights definition per levels
+- [ ] Load transitions
 
 BUGS:
 - [x] Sometime targets don't spawn
@@ -29,18 +30,18 @@ In no order
 - [ ] Game over animations
 - [x] Score
 - [ ] Load rig
-- [ ] UI
+- [x] UI
 - [ ] Jump ?
-- [ ] Gravity
+- [x] Gravity
 - [ ] Camera-Ground interaction
 - [x] Targets "AI"
 - [ ] Powerups
 - [ ] Camera juice
 - [ ] Cat
 - [ ] Targets UVMap2
-- [ ] Main Menu
+- [x] Main Menu
 - [ ] Main Menu / Score Board env + lighting
-- [ ] Score Board
+- [x] Score Board
 - [ ] Environment
 - [ ] Environment picker
 - [ ] Environment 2

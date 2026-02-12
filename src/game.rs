@@ -242,7 +242,17 @@ fn setup_ui(mut commands: Commands, fonts: Res<Fonts>) {
                         TextShadow::default(),
                     )],
                 )]
-            ),
+            )
+        ],
+    ));
+    commands.spawn((
+        DespawnOnExit(AppState::Playing),
+        Node {
+            width: percent(100),
+            height: percent(100),
+            ..Default::default()
+        },
+        children![
             // Timer
             (
                 Node {
