@@ -5,6 +5,7 @@ pub mod loader;
 pub mod menus;
 pub mod physics;
 pub mod player;
+pub mod powerup;
 pub mod target;
 
 use bevy::asset::AssetMetaCheck;
@@ -24,6 +25,7 @@ fn main() {
         env::EnvironmentPlugin,
         player::PlayerPlugin,
         target::TargetPlugin,
+        powerup::PowerupPlugin,
         game::GamePlugin,
         menus::MenusPlugin,
     ));

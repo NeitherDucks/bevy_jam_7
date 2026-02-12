@@ -5,7 +5,9 @@ use bevy::{prelude::*, time::common_conditions::on_timer};
 use crate::{
     loader::{LevelAssetHandles, LevelDef},
     menus::Fonts,
+    physics::MovementAcceleration,
     player::PlayerHitEntities,
+    powerup::{Powerup, PowerupBundle, PowerupTimer},
     target::{Target, TargetBundle},
 };
 
@@ -26,6 +28,7 @@ impl Plugin for GamePlugin {
                     check_for_hit,
                     tick_timer,
                     update_ui.run_if(on_timer(Duration::from_millis(100))),
+                    spawn_powerup.run_if(on_timer(Duration::from_secs(15))),
                 )
                     .run_if(in_state(PlayingState::Playing)),
             )
@@ -148,9 +151,6 @@ impl GameState {
         self.timer.reset();
     }
 }
-
-#[derive(Component)]
-pub struct Powerup;
 
 fn reset_game(mut commands: Commands) {
     info!("Resetting game");
@@ -309,13 +309,14 @@ fn tick_timer(
 
 fn check_for_hit(
     mut commands: Commands,
-    mut player: Single<&mut PlayerHitEntities>,
+    mut player: Single<(Entity, &mut PlayerHitEntities)>,
     targets: Query<Entity, With<Target>>,
     powerups: Query<Entity, With<Powerup>>,
     mut game_state: ResMut<GameState>,
     mut next_state: ResMut<NextState<AppState>>,
 ) {
-    for entity in player.0.drain() {
+    let player_entity = player.0;
+    for entity in player.1.0.drain() {
         if targets.contains(entity) {
             game_state.aquired_targets += 1;
             game_state.score += 100;
@@ -326,7 +327,11 @@ fn check_for_hit(
                 next_state.set(AppState::Loading);
             }
         } else if powerups.contains(entity) {
-            // TODO: Power ups
+            commands
+                .entity(player_entity)
+                .insert(MovementAcceleration(20.0))
+                .insert(PowerupTimer::default());
+
             commands.entity(entity).despawn();
         }
     }
@@ -335,6 +340,35 @@ fn check_for_hit(
 fn game_over(mut next_state: ResMut<NextState<AppState>>) {
     info!("Game over!");
     next_state.set(AppState::ScoreMenu);
+}
+
+fn spawn_powerup(
+    mut commands: Commands,
+    navmesh: Single<(Entity, &bevy_landmass::Archipelago3d)>,
+    mut rng: Single<&mut bevy_prng::ChaCha20Rng, With<bevy_rand::global::GlobalRng>>,
+    handles: Res<LevelAssetHandles>,
+) {
+    let mut iter = 0;
+    let mut pos = Err(bevy_landmass::SamplePointError::OutOfRange);
+    while pos.is_err() && iter < 100 {
+        iter += 1;
+        pos = get_random_position_on_navmesh(navmesh.1, &mut rng);
+    }
+
+    let pos = match pos {
+        Ok(p) => p,
+        Err(err) => {
+            warn!("Could not spawn powerup: {}", err);
+            return;
+        }
+    };
+
+    info!("\t Powerup spawned!");
+    commands.spawn(PowerupBundle::new(
+        SceneRoot(handles.target.clone()),
+        pos.point(),
+        Name::new("Powerup"),
+    ));
 }
 
 pub fn get_random_position_on_navmesh<'a>(

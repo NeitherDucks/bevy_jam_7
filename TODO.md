@@ -11,7 +11,7 @@ In order
 - [x] Gravity
   - [x] Check if the player is below ground and make them respawn
 - [ ] Camera collisions
-- [ ] Power ups
+- [x] Power ups
 - [ ] Better UI ( Icon for targets, Juice )
 - [ ] Lights definition per levels
 - [ ] Load transitions

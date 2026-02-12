@@ -38,11 +38,11 @@ impl LevelDef {
         god_behavior: GodBehavior::Cat,
     };
 
-    const SKELETON: LevelDef = LevelDef {
-        prefix: "skel",
-        target_behavior: TargetBehavior::Skeleton,
-        god_behavior: GodBehavior::Necromencer,
-    };
+    // const SKELETON: LevelDef = LevelDef {
+    //     prefix: "skel",
+    //     target_behavior: TargetBehavior::Skeleton,
+    //     god_behavior: GodBehavior::Necromencer,
+    // };
 }
 
 impl LevelShuffle {

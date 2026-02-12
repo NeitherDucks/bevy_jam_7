@@ -1,5 +1,5 @@
 use avian3d::{
-    math::{AdjustPrecision, AsF32, Scalar},
+    math::{AdjustPrecision, Scalar},
     prelude::*,
 };
 use bevy::prelude::*;
