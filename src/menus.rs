@@ -10,15 +10,26 @@ impl Plugin for MenusPlugin {
             .init_resource::<InputFocus>()
             .add_systems(OnEnter(AppState::MainMenu), setup_main_menu)
             .add_systems(OnEnter(AppState::SettingsMenu), setup_settings_menu)
-            .add_systems(OnEnter(PlayingState::SettingsMenu), setup_settings_menu)
+            .add_systems(OnExit(AppState::SettingsMenu), cleanup::<SettingsMenuTag>)
+            .add_systems(
+                OnEnter(PlayingState::SettingsMenu),
+                setup_playing_settings_menu,
+            )
+            .add_systems(
+                OnExit(PlayingState::SettingsMenu),
+                cleanup::<SettingsMenuTag>,
+            )
             .add_systems(OnEnter(PlayingState::Paused), setup_pause_menu)
             .add_systems(OnEnter(AppState::ScoreMenu), setup_score_menu)
             .add_systems(Update, button_system)
-            .add_observer(on_play_click)
-            .add_observer(on_settings_click)
-            .add_observer(on_main_menu_click)
             .add_observer(on_quit_click)
             .add_observer(on_settings_changed);
+    }
+}
+
+fn cleanup<T: Component>(mut commands: Commands, q: Query<Entity, With<T>>) {
+    for entity in &q {
+        commands.entity(entity).despawn();
     }
 }
 
@@ -32,12 +43,6 @@ impl FromWorld for Fonts {
         Fonts {
             blue_winter: world.load_asset("blue_winter.ttf"),
         }
-    }
-}
-
-fn cleanup<C: Component>(mut commands: Commands, menu: Query<Entity, With<C>>) {
-    for entity in menu {
-        commands.entity(entity).despawn();
     }
 }
 
@@ -93,10 +98,9 @@ fn setup_main_menu(mut commands: Commands, fonts: Res<Fonts>) {
 struct SettingsMenuTag;
 
 fn setup_settings_menu(mut commands: Commands, fonts: Res<Fonts>, settings: Res<GameSettings>) {
-    commands.spawn((SettingsMenuTag, Camera2d, DespawnOnExit(AppState::MainMenu)));
+    commands.spawn((SettingsMenuTag, Camera2d));
     commands.spawn((
         SettingsMenuTag,
-        DespawnOnExit(AppState::SettingsMenu),
         (
             Node {
                 width: percent(100),
@@ -105,13 +109,33 @@ fn setup_settings_menu(mut commands: Commands, fonts: Res<Fonts>, settings: Res<
                 justify_content: JustifyContent::Center,
                 ..Default::default()
             },
-            children![settings_ui(&fonts, &settings)],
+            children![settings_ui(&fonts, &settings, UiEvents::MainMenu)],
+        ),
+    ));
+}
+
+fn setup_playing_settings_menu(
+    mut commands: Commands,
+    fonts: Res<Fonts>,
+    settings: Res<GameSettings>,
+) {
+    commands.spawn((
+        SettingsMenuTag,
+        (
+            Node {
+                width: percent(100),
+                height: percent(100),
+                align_items: AlignItems::Center,
+                justify_content: JustifyContent::Center,
+                ..Default::default()
+            },
+            children![settings_ui(&fonts, &settings, UiEvents::Pause)],
         ),
     ));
 }
 
 #[allow(clippy::too_many_lines)]
-fn settings_ui(fonts: &Fonts, settings: &GameSettings) -> impl Bundle {
+fn settings_ui(fonts: &Fonts, settings: &GameSettings, back: UiEvents) -> impl Bundle {
     (
         Node {
             width: percent(60),
@@ -151,7 +175,7 @@ fn settings_ui(fonts: &Fonts, settings: &GameSettings) -> impl Bundle {
                     text(
                         format!("{:^5.1}", settings.camera_x_sensitivity),
                         fonts.blue_winter.clone(),
-                        32.0
+                        32.0,
                     ),
                     button(
                         ">",
@@ -172,7 +196,7 @@ fn settings_ui(fonts: &Fonts, settings: &GameSettings) -> impl Bundle {
                     text(
                         format!("{:^5.1}", settings.camera_y_sensitivity),
                         fonts.blue_winter.clone(),
-                        32.0
+                        32.0,
                     ),
                     button(
                         ">",
@@ -193,7 +217,7 @@ fn settings_ui(fonts: &Fonts, settings: &GameSettings) -> impl Bundle {
                     text(
                         format!("{:^5.1}", settings.music_volume),
                         fonts.blue_winter.clone(),
-                        32.0
+                        32.0,
                     ),
                     button(
                         ">",
@@ -214,7 +238,7 @@ fn settings_ui(fonts: &Fonts, settings: &GameSettings) -> impl Bundle {
                     text(
                         format!("{:^5.1}", settings.sfx_volume),
                         fonts.blue_winter.clone(),
-                        32.0
+                        32.0,
                     ),
                     button(
                         ">",
@@ -226,13 +250,7 @@ fn settings_ui(fonts: &Fonts, settings: &GameSettings) -> impl Bundle {
                 ],
             ),
             padding(UiRect::bottom(px(50))),
-            button(
-                "Back",
-                fonts.blue_winter.clone(),
-                200,
-                50,
-                UiEvents::MainMenu
-            ),
+            button("Back", fonts.blue_winter.clone(), 200, 50, back),
         ],
     )
 }
@@ -240,9 +258,55 @@ fn settings_ui(fonts: &Fonts, settings: &GameSettings) -> impl Bundle {
 #[derive(Component)]
 struct PauseMenuTag;
 
-fn setup_pause_menu(mut commands: Commands) {
-    // commands.spawn((PauseMenuTag, Camera2d));
-    // commands.spawn((PauseMenuTag, basic_layout()));
+fn setup_pause_menu(mut commands: Commands, fonts: Res<Fonts>) {
+    commands.spawn((
+        PauseMenuTag,
+        DespawnOnExit(PlayingState::Paused),
+        (
+            Node {
+                width: percent(100),
+                height: percent(100),
+                align_items: AlignItems::Center,
+                justify_content: JustifyContent::Center,
+                ..Default::default()
+            },
+            children![(
+                Node {
+                    width: percent(50),
+                    height: percent(40),
+                    flex_direction: FlexDirection::Column,
+                    align_items: AlignItems::Center,
+                    justify_content: JustifyContent::SpaceBetween,
+                    ..Default::default()
+                },
+                children![
+                    title("Pause", fonts.blue_winter.clone()),
+                    button(
+                        "Back to the dream",
+                        fonts.blue_winter.clone(),
+                        350,
+                        50,
+                        UiEvents::Resume
+                    ),
+                    padding(UiRect::bottom(px(50))),
+                    button(
+                        "Settings",
+                        fonts.blue_winter.clone(),
+                        250,
+                        50,
+                        UiEvents::PlayingSettings
+                    ),
+                    button(
+                        "Wake up",
+                        fonts.blue_winter.clone(),
+                        250,
+                        50,
+                        UiEvents::MainMenu
+                    ),
+                ]
+            )],
+        ),
+    ));
 }
 
 #[derive(Component)]
@@ -300,27 +364,9 @@ enum UiEvents {
     MainMenu,
     Quit,
     SettingsChange(GameSettings),
-}
-
-#[derive(Event)]
-struct OnPlayClicked;
-
-fn on_play_click(_event: On<OnPlayClicked>, mut next_state: ResMut<NextState<AppState>>) {
-    next_state.set(AppState::Loading);
-}
-
-#[derive(Event)]
-struct OnSettingsClicked;
-
-fn on_settings_click(_event: On<OnSettingsClicked>, mut next_state: ResMut<NextState<AppState>>) {
-    next_state.set(AppState::SettingsMenu);
-}
-
-#[derive(Event)]
-struct OnMainMenuClicked;
-
-fn on_main_menu_click(_event: On<OnMainMenuClicked>, mut next_state: ResMut<NextState<AppState>>) {
-    next_state.set(AppState::MainMenu);
+    Pause,
+    PlayingSettings,
+    Resume,
 }
 
 #[derive(Event)]
@@ -336,7 +382,10 @@ struct OnSettingsChanged(GameSettings);
 fn on_settings_changed(
     event: On<OnSettingsChanged>,
     mut settings: ResMut<GameSettings>,
-    mut next_state: ResMut<NextState<AppState>>,
+    app_state: Option<Res<State<AppState>>>,
+    playing_state: Option<Res<State<PlayingState>>>,
+    next_app_state: Option<ResMut<NextState<AppState>>>,
+    next_playing_state: Option<ResMut<NextState<PlayingState>>>,
 ) {
     *settings = GameSettings {
         camera_x_sensitivity: event.0.camera_x_sensitivity.clamp(0.0, 2.0),
@@ -345,8 +394,18 @@ fn on_settings_changed(
         sfx_volume: event.0.sfx_volume.clamp(0.0, 100.0),
     };
 
-    // I'm lazy (forces refresh of the UI)
-    next_state.set(AppState::SettingsMenu);
+    // Force UI to refresh
+    if let Some(app_state) = app_state
+        && app_state.get() == &AppState::SettingsMenu
+        && let Some(mut next_app_state) = next_app_state
+    {
+        next_app_state.set(AppState::SettingsMenu);
+    } else if let Some(playing_state) = playing_state
+        && playing_state.get() == &PlayingState::SettingsMenu
+        && let Some(mut next_playing_state) = next_playing_state
+    {
+        next_playing_state.set(PlayingState::SettingsMenu);
+    }
 }
 
 // ---------------------------------------------------------------------------------
@@ -426,6 +485,31 @@ pub fn text(text: impl Into<String>, font: Handle<Font>, font_size: f32) -> impl
     )
 }
 
+// pub fn text_tagged(
+//     text: impl Into<String>,
+//     font: Handle<Font>,
+//     font_size: f32,
+//     tag: impl Component,
+// ) -> impl Bundle {
+//     (
+//         Node {
+//             padding: UiRect::all(px(10)),
+//             ..Default::default()
+//         },
+//         children![(
+//             tag,
+//             Text::new(text),
+//             TextFont {
+//                 font,
+//                 font_size,
+//                 ..default()
+//             },
+//             TextColor(Color::srgb(0.9, 0.9, 0.9)),
+//             TextShadow::default(),
+//         )],
+//     )
+// }
+
 fn padding(padding: UiRect) -> impl Bundle {
     Node {
         padding,
@@ -451,6 +535,8 @@ fn button_system(
         ),
         Changed<Interaction>,
     >,
+    mut next_app_state: ResMut<NextState<AppState>>,
+    mut next_playing_state: ResMut<NextState<PlayingState>>,
 ) {
     for (entity, interaction, mut color, mut border_color, mut button, event) in
         &mut interaction_query
@@ -465,13 +551,16 @@ fn button_system(
                 button.set_changed();
 
                 match event {
-                    UiEvents::Play => commands.trigger(OnPlayClicked),
-                    UiEvents::Settings => commands.trigger(OnSettingsClicked),
-                    UiEvents::MainMenu => commands.trigger(OnMainMenuClicked),
+                    UiEvents::Play => next_app_state.set(AppState::Loading),
+                    UiEvents::Settings => next_app_state.set(AppState::SettingsMenu),
+                    UiEvents::MainMenu => next_app_state.set(AppState::MainMenu),
                     UiEvents::Quit => commands.trigger(OnQuitClicked),
                     UiEvents::SettingsChange(game_settings) => {
                         commands.trigger(OnSettingsChanged(*game_settings));
                     }
+                    UiEvents::Resume => next_playing_state.set(PlayingState::Playing),
+                    UiEvents::PlayingSettings => next_playing_state.set(PlayingState::SettingsMenu),
+                    UiEvents::Pause => next_playing_state.set(PlayingState::Paused),
                 }
             }
             Interaction::Hovered => {

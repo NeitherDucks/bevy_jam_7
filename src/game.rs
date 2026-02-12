@@ -46,9 +46,9 @@ impl Plugin for GamePlugin {
 
 #[derive(Clone, Debug, Default, PartialEq, Eq, Hash, States)]
 pub enum AppState {
+    #[default]
     MainMenu,
     SettingsMenu,
-    #[default]
     Loading,
     EnvironmentSetup,
     Playing,

@@ -2,7 +2,7 @@ In order
 
 - [x] Main menu
 - [x] Game over / Score menu
-- [ ] Pause menu
+- [x] Pause menu
 - [ ] Win condition
 - [x] UI ( Current score, time, and collected targets )
 - [ ] Player model
