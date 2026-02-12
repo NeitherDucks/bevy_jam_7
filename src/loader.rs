@@ -13,7 +13,8 @@ impl Plugin for LoaderPlugin {
             // .insert_resource(LevelShuffle::new(&[LevelDef::MICE, LevelDef::SKELETON]))
             .insert_resource(LevelShuffle::new(&[LevelDef::MICE]))
             .add_systems(OnEnter(AppState::Loading), load_assets)
-            .add_systems(Update, check_load.run_if(in_state(AppState::Loading)));
+            .add_systems(Update, check_load.run_if(in_state(AppState::Loading)))
+            .add_systems(OnExit(AppState::Playing), unload_assets);
     }
 }
 
@@ -92,10 +93,12 @@ fn load_assets(
     mut level_shuffle: ResMut<LevelShuffle>,
     mut rng: Single<&mut bevy_prng::ChaCha20Rng, With<bevy_rand::global::GlobalRng>>,
 ) {
+    info!("Picking level");
     let level_def = level_shuffle.next(&mut rng);
 
     commands.insert_resource(level_def);
 
+    info!("Loading level");
     let env_path = format!("{}_env.glb", level_def.prefix);
     let col_path = format!("{}_col.glb", level_def.prefix);
     let nav_path = format!("{}_nav.nav", level_def.prefix);
@@ -130,6 +133,12 @@ fn check_load(
     mut next_state: ResMut<NextState<AppState>>,
 ) {
     if handles.is_loaded(&asset_server) {
+        info!("All assets loaded!");
         next_state.set(AppState::EnvironmentSetup);
     }
+}
+
+fn unload_assets(mut commands: Commands) {
+    info!("Unloading assets");
+    commands.remove_resource::<LevelAssetHandles>();
 }

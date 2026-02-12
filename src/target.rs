@@ -143,7 +143,7 @@ fn assign_new_target(
     mut rng: Single<&mut bevy_prng::ChaCha20Rng, With<bevy_rand::global::GlobalRng>>,
 ) {
     for entity in query {
-        let Some(target) = get_random_position_on_navmesh(&navmesh, &mut rng) else {
+        let Ok(target) = get_random_position_on_navmesh(&navmesh, &mut rng) else {
             return;
         };
 

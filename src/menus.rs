@@ -1,6 +1,6 @@
 use bevy::{input_focus::InputFocus, prelude::*};
 
-use crate::game::{AppState, GameSettings, PlayingState};
+use crate::game::{AppState, GameSettings, GameState, PlayingState};
 
 pub struct MenusPlugin;
 
@@ -9,18 +9,10 @@ impl Plugin for MenusPlugin {
         app.init_resource::<Fonts>()
             .init_resource::<InputFocus>()
             .add_systems(OnEnter(AppState::MainMenu), setup_main_menu)
-            .add_systems(OnExit(AppState::MainMenu), cleanup::<MainMenuTag>)
             .add_systems(OnEnter(AppState::SettingsMenu), setup_settings_menu)
-            .add_systems(OnExit(AppState::SettingsMenu), cleanup::<SettingsMenuTag>)
             .add_systems(OnEnter(PlayingState::SettingsMenu), setup_settings_menu)
-            .add_systems(
-                OnExit(PlayingState::SettingsMenu),
-                cleanup::<SettingsMenuTag>,
-            )
             .add_systems(OnEnter(PlayingState::Paused), setup_pause_menu)
-            .add_systems(OnExit(PlayingState::Paused), cleanup::<PauseMenuTag>)
             .add_systems(OnEnter(AppState::ScoreMenu), setup_score_menu)
-            .add_systems(OnExit(AppState::ScoreMenu), cleanup::<ScoreMenuTag>)
             .add_systems(Update, button_system)
             .add_observer(on_play_click)
             .add_observer(on_settings_click)
@@ -31,8 +23,8 @@ impl Plugin for MenusPlugin {
 }
 
 #[derive(Resource)]
-struct Fonts {
-    blue_winter: Handle<Font>,
+pub struct Fonts {
+    pub blue_winter: Handle<Font>,
 }
 
 impl FromWorld for Fonts {
@@ -53,9 +45,10 @@ fn cleanup<C: Component>(mut commands: Commands, menu: Query<Entity, With<C>>) {
 struct MainMenuTag;
 
 fn setup_main_menu(mut commands: Commands, fonts: Res<Fonts>) {
-    commands.spawn((MainMenuTag, Camera2d));
+    commands.spawn((MainMenuTag, Camera2d, DespawnOnExit(AppState::MainMenu)));
     commands.spawn((
         MainMenuTag,
+        DespawnOnExit(AppState::MainMenu),
         (
             Node {
                 width: percent(100),
@@ -100,9 +93,10 @@ fn setup_main_menu(mut commands: Commands, fonts: Res<Fonts>) {
 struct SettingsMenuTag;
 
 fn setup_settings_menu(mut commands: Commands, fonts: Res<Fonts>, settings: Res<GameSettings>) {
-    commands.spawn((SettingsMenuTag, Camera2d));
+    commands.spawn((SettingsMenuTag, Camera2d, DespawnOnExit(AppState::MainMenu)));
     commands.spawn((
         SettingsMenuTag,
+        DespawnOnExit(AppState::SettingsMenu),
         (
             Node {
                 width: percent(100),
@@ -247,16 +241,54 @@ fn settings_ui(fonts: &Fonts, settings: &GameSettings) -> impl Bundle {
 struct PauseMenuTag;
 
 fn setup_pause_menu(mut commands: Commands) {
-    commands.spawn((PauseMenuTag, Camera2d));
+    // commands.spawn((PauseMenuTag, Camera2d));
     // commands.spawn((PauseMenuTag, basic_layout()));
 }
 
 #[derive(Component)]
 struct ScoreMenuTag;
 
-fn setup_score_menu(mut commands: Commands) {
-    commands.spawn((ScoreMenuTag, Camera2d));
-    // commands.spawn((ScoreMenuTag, basic_layout()));
+fn setup_score_menu(mut commands: Commands, fonts: Res<Fonts>, game_state: Res<GameState>) {
+    commands.spawn((ScoreMenuTag, Camera2d, DespawnOnExit(AppState::ScoreMenu)));
+    commands.spawn((
+        ScoreMenuTag,
+        DespawnOnExit(AppState::ScoreMenu),
+        (
+            Node {
+                width: percent(100),
+                height: percent(100),
+                align_items: AlignItems::Center,
+                justify_content: JustifyContent::Center,
+                ..Default::default()
+            },
+            children![(
+                Node {
+                    width: percent(50),
+                    height: percent(40),
+                    flex_direction: FlexDirection::Column,
+                    align_items: AlignItems::Center,
+                    justify_content: JustifyContent::SpaceBetween,
+                    ..Default::default()
+                },
+                children![
+                    title("You lost and woke up!", fonts.blue_winter.clone()),
+                    text(
+                        format!("You got: {} points, well done!", game_state.score),
+                        fonts.blue_winter.clone(),
+                        36.0
+                    ),
+                    text("(probably)", fonts.blue_winter.clone(), 24.0),
+                    button(
+                        "Skip day",
+                        fonts.blue_winter.clone(),
+                        200,
+                        50,
+                        UiEvents::MainMenu
+                    ),
+                ]
+            )],
+        ),
+    ));
 }
 
 // ---------------------------------------------------------------------------------
@@ -375,7 +407,7 @@ fn title(text: impl Into<String>, font: Handle<Font>) -> impl Bundle {
     )
 }
 
-fn text(text: impl Into<String>, font: Handle<Font>, font_size: f32) -> impl Bundle {
+pub fn text(text: impl Into<String>, font: Handle<Font>, font_size: f32) -> impl Bundle {
     (
         Node {
             padding: UiRect::all(px(10)),

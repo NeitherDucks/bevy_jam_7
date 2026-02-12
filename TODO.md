@@ -1,13 +1,25 @@
 In order
 
-- [ ] Main menu
-- [ ] Game over / Score menu
-- [ ] UI ( Current score, time, and collected targets )
+- [x] Main menu
+- [x] Game over / Score menu
+- [ ] Pause menu
+- [ ] Win condition
+- [x] UI ( Current score, time, and collected targets )
 - [ ] Player model
 - [ ] Orient mice to movement direction
 - [ ] Gravity
+  - [ ] Check if the player is below ground and make them respawn
 - [ ] Camera collisions
 - [ ] Power ups
+- [ ] Better UI ( Icon for targets, Juice )
+- [ ] Lights definition per levels
+
+BUGS:
+- [x] Sometime targets don't spawn
+- [ ] Targets spawn "inside" collisions (make collision solid so the there is no navmeshes inside the collisions)
+  - Check for stuck targets and have them respawn?
+- [x] Restarting a game after loosing make the game crash
+  - The game needs a proper reset procedure
 
 In no order
 

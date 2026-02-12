@@ -36,12 +36,7 @@ fn setup(
     mut commands: Commands,
     mut meshes: ResMut<Assets<Mesh>>,
     mut materials: ResMut<Assets<StandardMaterial>>,
-    mut cursor_options: Single<&mut CursorOptions>,
 ) {
-    grab_cursor(&mut cursor_options, true);
-
-    commands.insert_resource(GrabMousePlease(true));
-
     let mut player = commands.spawn((
         DespawnOnExit(AppState::Playing),
         Mesh3d(meshes.add(Cuboid::new(1.0, 1.0, 1.0))),
@@ -114,16 +109,30 @@ fn setup(
     ));
 }
 
-fn enable_controls(mut commands: Commands, player: Single<Entity, With<Player>>) {
+fn enable_controls(
+    mut commands: Commands,
+    player: Single<Entity, With<Player>>,
+    mut cursor_options: Single<&mut CursorOptions>,
+) {
     commands
         .entity(player.into_inner())
         .insert(ContextActivity::<Player>::ACTIVE);
+
+    grab_cursor(&mut cursor_options, true);
+    commands.insert_resource(GrabMousePlease(true));
 }
 
-fn disable_controls(mut commands: Commands, player: Single<Entity, With<Player>>) {
+fn disable_controls(
+    mut commands: Commands,
+    player: Single<Entity, With<Player>>,
+    mut cursor_options: Single<&mut CursorOptions>,
+) {
     commands
         .entity(player.into_inner())
         .insert(ContextActivity::<Player>::INACTIVE);
+
+    grab_cursor(&mut cursor_options, false);
+    commands.insert_resource(GrabMousePlease(false));
 }
 
 /// Tag for the Player

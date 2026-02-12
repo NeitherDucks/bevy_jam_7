@@ -1,7 +1,10 @@
-use bevy::prelude::*;
+use std::time::Duration;
+
+use bevy::{prelude::*, time::common_conditions::on_timer};
 
 use crate::{
     loader::{LevelAssetHandles, LevelDef},
+    menus::Fonts,
     player::PlayerHitEntities,
     target::{Target, TargetBundle},
 };
@@ -15,11 +18,20 @@ impl Plugin for GamePlugin {
             .add_sub_state::<PlayingState>()
             .init_resource::<GameState>()
             .init_resource::<GameSettings>()
-            .add_systems(OnEnter(AppState::Playing), init_game)
+            .add_systems(OnTransition { exited: AppState::MainMenu, entered: AppState::Loading }, reset_game)
+            .add_systems(OnEnter(AppState::Playing), (init_game, setup_ui))
             .add_systems(
                 Update,
-                (check_for_hit, tick_timer).run_if(in_state(PlayingState::Playing)),
-            );
+                (
+                    check_for_hit,
+                    tick_timer,
+                    update_ui.run_if(on_timer(Duration::from_millis(100))),
+                )
+                    .run_if(in_state(PlayingState::Playing)),
+            )
+            .add_systems(OnEnter(PlayingState::GameOver), game_over)
+            // .add_systems(OnExit(AppState::Playing), reset_game)
+        ;
 
         #[cfg(feature = "dev")]
         app.add_systems(
@@ -34,9 +46,9 @@ impl Plugin for GamePlugin {
 
 #[derive(Clone, Debug, Default, PartialEq, Eq, Hash, States)]
 pub enum AppState {
-    #[default]
     MainMenu,
     SettingsMenu,
+    #[default]
     Loading,
     EnvironmentSetup,
     Playing,
@@ -102,11 +114,13 @@ impl GameSettings {
     }
 }
 
-#[derive(Resource, Reflect)]
+#[derive(Debug, Resource, Reflect)]
 pub struct GameState {
-    difficulty: u8,
-    score: u32,
-    timer: Timer,
+    pub difficulty: u8,
+    pub score: u32,
+    pub timer: Timer,
+    pub total_targets: u8,
+    pub aquired_targets: u8,
 }
 
 impl FromWorld for GameState {
@@ -115,6 +129,8 @@ impl FromWorld for GameState {
             difficulty: 0,
             score: 0,
             timer: Timer::from_seconds(120.0, TimerMode::Once),
+            total_targets: 0,
+            aquired_targets: 0,
         }
     }
 }
@@ -122,6 +138,7 @@ impl FromWorld for GameState {
 impl GameState {
     fn next_difficulty(&mut self) {
         self.difficulty += 1;
+        self.total_targets = 10 + (self.difficulty - 1) * 4;
 
         let new_duration = (120 - (u64::from(self.difficulty) * 10)).max(30);
 
@@ -133,6 +150,12 @@ impl GameState {
 #[derive(Component)]
 pub struct Powerup;
 
+fn reset_game(mut commands: Commands) {
+    info!("Resetting game");
+    commands.remove_resource::<GameState>();
+    commands.init_resource::<GameState>();
+}
+
 fn init_game(
     mut commands: Commands,
     navmesh: Single<(Entity, &bevy_landmass::Archipelago3d)>,
@@ -141,25 +164,29 @@ fn init_game(
     level_def: Res<LevelDef>,
     handles: Res<LevelAssetHandles>,
 ) {
-    info!("Initializing game ...");
-
+    info!("Picking difficulty");
     state.next_difficulty();
 
     // Spawn targets
-    let amount = 10 + (state.difficulty - 1) * 4;
-
-    for _i in 0..amount {
+    info!("Spawning targets:");
+    for i in 0..state.total_targets {
+        info!("\t Target {}", i);
         let mut iter = 0;
-        let mut pos = None;
-        while pos.is_none() && iter < 100 {
+        let mut pos = Err(bevy_landmass::SamplePointError::OutOfRange);
+        while pos.is_err() && iter < 100 {
             iter += 1;
             pos = get_random_position_on_navmesh(navmesh.1, &mut rng);
         }
 
-        let Some(pos) = pos else {
-            continue;
+        let pos = match pos {
+            Ok(p) => p,
+            Err(err) => {
+                warn!("Could not spawn target {}: {}", i, err);
+                continue;
+            }
         };
 
+        info!("\t Target {} spawned!", i);
         commands.spawn((
             TargetBundle::new(
                 handles.target.clone(),
@@ -170,6 +197,90 @@ fn init_game(
             level_def.target_behavior,
         ));
     }
+}
+
+#[derive(Component)]
+struct TimerUi;
+
+#[derive(Component)]
+struct TargetsUi;
+
+fn setup_ui(mut commands: Commands, fonts: Res<Fonts>) {
+    info!("Setting up UI");
+    commands.spawn((
+        DespawnOnExit(AppState::Playing),
+        Node {
+            width: percent(100),
+            height: percent(100),
+            ..Default::default()
+        },
+        children![
+            // Targets
+            (
+                Node {
+                    left: px(25),
+                    top: px(25),
+                    ..Default::default()
+                },
+                children![(
+                    Node {
+                        margin: UiRect::bottom(px(100)),
+                        padding: UiRect::all(px(10)),
+                        ..Default::default()
+                    },
+                    children![(
+                        TargetsUi,
+                        Text::new(""),
+                        TextFont {
+                            font: fonts.blue_winter.clone(),
+                            font_size: 36.0,
+                            ..default()
+                        },
+                        TextColor(Color::srgb(0.9, 0.9, 0.9)),
+                        TextShadow::default(),
+                    )],
+                )]
+            ),
+            // Timer
+            (
+                Node {
+                    margin: auto().horizontal(),
+                    top: px(25),
+                    ..Default::default()
+                },
+                children![(
+                    Node {
+                        margin: UiRect::bottom(px(100)),
+                        padding: UiRect::all(px(10)),
+                        ..Default::default()
+                    },
+                    children![(
+                        TimerUi,
+                        Text::new(""),
+                        TextFont {
+                            font: fonts.blue_winter.clone(),
+                            font_size: 52.0,
+                            ..default()
+                        },
+                        TextColor(Color::srgb(0.9, 0.9, 0.9)),
+                        TextShadow::default(),
+                    )],
+                )]
+            )
+        ],
+    ));
+}
+
+fn update_ui(
+    mut timer_ui: Single<&mut Text, (With<TimerUi>, Without<TargetsUi>)>,
+    mut targets_ui: Single<&mut Text, (With<TargetsUi>, Without<TimerUi>)>,
+    game_state: Res<GameState>,
+) {
+    timer_ui.0 = format!("{:.0}", game_state.timer.remaining_secs());
+    targets_ui.0 = format!(
+        "{} / {}",
+        game_state.aquired_targets, game_state.total_targets
+    );
 }
 
 fn tick_timer(
@@ -193,6 +304,7 @@ fn check_for_hit(
 ) {
     for entity in player.0.drain() {
         if targets.contains(entity) {
+            game_state.aquired_targets += 1;
             game_state.score += 100;
             commands.entity(entity).despawn();
         } else if powerups.contains(entity) {
@@ -202,23 +314,29 @@ fn check_for_hit(
     }
 }
 
+fn game_over(mut next_state: ResMut<NextState<AppState>>) {
+    info!("Game over!");
+    next_state.set(AppState::ScoreMenu);
+}
+
 pub fn get_random_position_on_navmesh<'a>(
     navmesh: &'a bevy_landmass::Archipelago3d,
     rng: &mut bevy_prng::ChaCha20Rng,
-) -> Option<bevy_landmass::SampledPoint<'a, bevy_landmass::coords::ThreeD>> {
+) -> Result<
+    bevy_landmass::SampledPoint<'a, bevy_landmass::coords::ThreeD>,
+    bevy_landmass::SamplePointError,
+> {
     let circle = Circle { radius: 135.0 };
     let new_pos = circle.sample_interior(rng).extend(0.0).xzy();
 
-    navmesh
-        .sample_point(
-            new_pos,
-            &bevy_landmass::PointSampleDistance3d {
-                horizontal_distance: 5.0,
-                distance_above: 0.5,
-                distance_below: 0.5,
-                vertical_preference_ratio: 1.0,
-                animation_link_max_vertical_distance: 5.0,
-            },
-        )
-        .ok()
+    navmesh.sample_point(
+        new_pos,
+        &bevy_landmass::PointSampleDistance3d {
+            horizontal_distance: 5.0,
+            distance_above: 0.5,
+            distance_below: 0.5,
+            vertical_preference_ratio: 1.0,
+            animation_link_max_vertical_distance: 5.0,
+        },
+    )
 }
