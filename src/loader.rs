@@ -73,6 +73,7 @@ pub struct LevelAssetHandles {
     pub target: Handle<Scene>,
     pub god: Handle<GltfMesh>,
     pub material: Handle<StandardMaterial>,
+    pub player: Handle<Scene>,
 }
 
 impl LevelAssetHandles {
@@ -124,6 +125,7 @@ fn load_assets(
             }
             .from_asset("env.glb"),
         ),
+        player: asset_server.load(GltfAssetLabel::Scene(0).from_asset("player.glb")),
     });
 }
 
@@ -134,7 +136,7 @@ fn check_load(
 ) {
     if handles.is_loaded(&asset_server) {
         info!("All assets loaded!");
-        next_state.set(AppState::EnvironmentSetup);
+        next_state.set(AppState::Setup);
     }
 }
 

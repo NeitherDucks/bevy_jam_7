@@ -4,6 +4,7 @@ use bevy::prelude::*;
 use crate::{
     game::{AppState, PlayingState},
     physics::MovementAcceleration,
+    player::PLAYER_DEFAULT_SPEED,
 };
 
 pub struct PowerupPlugin;
@@ -80,7 +81,7 @@ fn tick_timers(
             commands
                 .entity(entity)
                 .remove::<PowerupTimer>()
-                .insert(MovementAcceleration(10.0));
+                .insert(MovementAcceleration(PLAYER_DEFAULT_SPEED));
         }
     }
 }

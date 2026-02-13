@@ -2,6 +2,8 @@ use bevy::{input_focus::InputFocus, prelude::*};
 
 use crate::game::{AppState, GameSettings, GameState, PlayingState};
 
+const MENUS_BG_COLOR: BackgroundColor = BackgroundColor(Color::linear_rgba(0.05, 0.05, 0.08, 0.8));
+
 pub struct MenusPlugin;
 
 impl Plugin for MenusPlugin {
@@ -129,6 +131,7 @@ fn setup_playing_settings_menu(
                 justify_content: JustifyContent::Center,
                 ..Default::default()
             },
+            MENUS_BG_COLOR,
             children![settings_ui(&fonts, &settings, UiEvents::Pause)],
         ),
     ));
@@ -270,6 +273,7 @@ fn setup_pause_menu(mut commands: Commands, fonts: Res<Fonts>) {
                 justify_content: JustifyContent::Center,
                 ..Default::default()
             },
+            MENUS_BG_COLOR,
             children![(
                 Node {
                     width: percent(50),

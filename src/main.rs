@@ -1,3 +1,4 @@
+pub mod anim;
 pub mod env;
 pub mod game;
 pub mod god;
@@ -8,8 +9,7 @@ pub mod player;
 pub mod powerup;
 pub mod target;
 
-use bevy::asset::AssetMetaCheck;
-use bevy::prelude::*;
+use bevy::{asset::AssetMetaCheck, prelude::*};
 
 fn main() {
     let mut app = App::new();
@@ -28,6 +28,7 @@ fn main() {
         powerup::PowerupPlugin,
         game::GamePlugin,
         menus::MenusPlugin,
+        anim::AnimPlugin,
     ));
 
     #[cfg(feature = "dev")]
@@ -35,8 +36,8 @@ fn main() {
         bevy::remote::RemotePlugin::default(),
         bevy::remote::http::RemoteHttpPlugin::default(),
         bevy_inspector_egui::bevy_egui::EguiPlugin::default(),
-        bevy_inspector_egui::quick::WorldInspectorPlugin::default(),
-        bevy_inspector_egui::quick::ResourceInspectorPlugin::<game::GameState>::default(),
+        bevy_inspector_egui::quick::WorldInspectorPlugin::new(),
+        bevy_inspector_egui::quick::ResourceInspectorPlugin::<game::GameState>::new(),
     ));
 
     app.run();

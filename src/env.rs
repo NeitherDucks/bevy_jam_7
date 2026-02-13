@@ -11,7 +11,10 @@ use bevy_landmass::{coords::ThreeD, debug::LandmassDebugPlugin};
 use bevy_rerecast::prelude::*;
 use landmass_rerecast::{Island3dBundle, LandmassRerecastPlugin, NavMeshHandle3d};
 
-use crate::{game::AppState, loader::LevelAssetHandles};
+use crate::{
+    game::{AppState, SetupState},
+    loader::LevelAssetHandles,
+};
 
 pub struct EnvironmentPlugin;
 
@@ -23,12 +26,11 @@ impl Plugin for EnvironmentPlugin {
             Landmass3dPlugin::default(),
             LandmassRerecastPlugin::default(),
         ))
-        .add_systems(OnEnter(AppState::EnvironmentSetup), setup)
+        .add_systems(OnEnter(SetupState::Environment), setup)
         .add_systems(
             Update,
-            wait_for_navmesh.run_if(
-                in_state(AppState::EnvironmentSetup).and(on_timer(Duration::from_millis(50))),
-            ),
+            wait_for_navmesh
+                .run_if(in_state(SetupState::Environment).and(on_timer(Duration::from_millis(50)))),
         );
 
         #[cfg(feature = "dev")]
@@ -95,7 +97,7 @@ fn setup(mut commands: Commands, meshes: ResMut<Assets<Mesh>>, handles: Res<Leve
 
 fn wait_for_navmesh(
     navmesh: Single<&bevy_landmass::Archipelago3d>,
-    mut next_state: ResMut<NextState<AppState>>,
+    mut next_state: ResMut<NextState<SetupState>>,
 ) {
     // Repeatedly attempt to sample the navmesh until it becomes available
     if navmesh
@@ -112,6 +114,6 @@ fn wait_for_navmesh(
         .is_ok()
     {
         info!("Navmesh is available");
-        next_state.set(AppState::Playing);
+        next_state.set(SetupState::Entities);
     }
 }

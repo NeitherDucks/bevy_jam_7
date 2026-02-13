@@ -6,7 +6,7 @@ use crate::{
     loader::{LevelAssetHandles, LevelDef},
     menus::Fonts,
     physics::MovementAcceleration,
-    player::PlayerHitEntities,
+    player::{PLAYER_BOOST_SPEED, Player, PlayerHitEntities},
     powerup::{Powerup, PowerupBundle, PowerupTimer},
     target::{Target, TargetBundle},
 };
@@ -18,10 +18,17 @@ impl Plugin for GamePlugin {
         app.init_state::<AppState>()
             .register_type::<GameState>()
             .add_sub_state::<PlayingState>()
+            .add_sub_state::<SetupState>()
             .init_resource::<GameState>()
             .init_resource::<GameSettings>()
-            .add_systems(OnTransition { exited: AppState::MainMenu, entered: AppState::Loading }, reset_game)
-            .add_systems(OnEnter(AppState::Playing), (init_game, setup_ui))
+            .add_systems(
+                OnTransition {
+                    exited: AppState::MainMenu,
+                    entered: AppState::Loading,
+                },
+                reset_game,
+            )
+            .add_systems(OnEnter(SetupState::Entities), (init_game, setup_ui))
             .add_systems(
                 Update,
                 (
@@ -32,9 +39,7 @@ impl Plugin for GamePlugin {
                 )
                     .run_if(in_state(PlayingState::Playing)),
             )
-            .add_systems(OnEnter(PlayingState::GameOver), game_over)
-            // .add_systems(OnExit(AppState::Playing), reset_game)
-        ;
+            .add_systems(OnEnter(PlayingState::GameOver), game_over);
 
         #[cfg(feature = "dev")]
         app.add_systems(
@@ -42,6 +47,7 @@ impl Plugin for GamePlugin {
             (
                 bevy::dev_tools::states::log_transitions::<AppState>,
                 bevy::dev_tools::states::log_transitions::<PlayingState>,
+                bevy::dev_tools::states::log_transitions::<SetupState>,
             ),
         );
     }
@@ -49,13 +55,22 @@ impl Plugin for GamePlugin {
 
 #[derive(Clone, Debug, Default, PartialEq, Eq, Hash, States)]
 pub enum AppState {
-    #[default]
     MainMenu,
     SettingsMenu,
+    #[default]
     Loading,
-    EnvironmentSetup,
+    Setup,
     Playing,
     ScoreMenu,
+}
+
+#[derive(Clone, Debug, Default, PartialEq, Eq, Hash, SubStates)]
+#[source(AppState = AppState::Setup)]
+pub enum SetupState {
+    #[default]
+    Environment,
+    Entities,
+    Animation,
 }
 
 #[derive(Clone, Debug, Default, PartialEq, Eq, Hash, SubStates)]
@@ -165,6 +180,7 @@ fn init_game(
     mut state: ResMut<GameState>,
     level_def: Res<LevelDef>,
     handles: Res<LevelAssetHandles>,
+    mut next_state: ResMut<NextState<SetupState>>,
 ) {
     info!("Picking difficulty");
     state.next_difficulty();
@@ -177,7 +193,7 @@ fn init_game(
         let mut pos = Err(bevy_landmass::SamplePointError::OutOfRange);
         while pos.is_err() && iter < 100 {
             iter += 1;
-            pos = get_random_position_on_navmesh(navmesh.1, &mut rng);
+            pos = get_random_position_on_navmesh(Vec3::ZERO, 135.0, navmesh.1, &mut rng);
         }
 
         let pos = match pos {
@@ -199,6 +215,8 @@ fn init_game(
             level_def.target_behavior,
         ));
     }
+
+    next_state.set(SetupState::Animation);
 }
 
 #[derive(Component)]
@@ -210,6 +228,7 @@ struct TargetsUi;
 fn setup_ui(mut commands: Commands, fonts: Res<Fonts>) {
     info!("Setting up UI");
     commands.spawn((
+        GlobalZIndex(-1),
         DespawnOnExit(AppState::Playing),
         Node {
             width: percent(100),
@@ -246,6 +265,7 @@ fn setup_ui(mut commands: Commands, fonts: Res<Fonts>) {
         ],
     ));
     commands.spawn((
+        GlobalZIndex(-1),
         DespawnOnExit(AppState::Playing),
         Node {
             width: percent(100),
@@ -329,7 +349,7 @@ fn check_for_hit(
         } else if powerups.contains(entity) {
             commands
                 .entity(player_entity)
-                .insert(MovementAcceleration(20.0))
+                .insert(MovementAcceleration(PLAYER_BOOST_SPEED))
                 .insert(PowerupTimer::default());
 
             commands.entity(entity).despawn();
@@ -344,6 +364,7 @@ fn game_over(mut next_state: ResMut<NextState<AppState>>) {
 
 fn spawn_powerup(
     mut commands: Commands,
+    player: Single<&Transform, With<Player>>,
     navmesh: Single<(Entity, &bevy_landmass::Archipelago3d)>,
     mut rng: Single<&mut bevy_prng::ChaCha20Rng, With<bevy_rand::global::GlobalRng>>,
     handles: Res<LevelAssetHandles>,
@@ -352,7 +373,7 @@ fn spawn_powerup(
     let mut pos = Err(bevy_landmass::SamplePointError::OutOfRange);
     while pos.is_err() && iter < 100 {
         iter += 1;
-        pos = get_random_position_on_navmesh(navmesh.1, &mut rng);
+        pos = get_random_position_on_navmesh(player.translation, 50.0, navmesh.1, &mut rng);
     }
 
     let pos = match pos {
@@ -372,22 +393,24 @@ fn spawn_powerup(
 }
 
 pub fn get_random_position_on_navmesh<'a>(
+    center: Vec3,
+    radius: f32,
     navmesh: &'a bevy_landmass::Archipelago3d,
     rng: &mut bevy_prng::ChaCha20Rng,
 ) -> Result<
     bevy_landmass::SampledPoint<'a, bevy_landmass::coords::ThreeD>,
     bevy_landmass::SamplePointError,
 > {
-    let circle = Circle { radius: 135.0 };
-    let new_pos = circle.sample_interior(rng).extend(0.0).xzy();
+    let circle = Circle { radius };
+    let new_pos = circle.sample_interior(rng).extend(0.0).xzy() + center;
 
     navmesh.sample_point(
         new_pos,
         &bevy_landmass::PointSampleDistance3d {
-            horizontal_distance: 5.0,
-            distance_above: 0.5,
-            distance_below: 0.5,
-            vertical_preference_ratio: 1.0,
+            horizontal_distance: radius * 0.5,
+            distance_above: 1.0,
+            distance_below: 1.0,
+            vertical_preference_ratio: 0.0,
             animation_link_max_vertical_distance: 5.0,
         },
     )

@@ -8,9 +8,14 @@ use bevy_enhanced_input::prelude::*;
 // use bevy_landmass::Character3dBundle;
 
 use crate::{
-    game::{AppState, PlayingState},
+    game::{AppState, PlayingState, SetupState},
+    loader::LevelAssetHandles,
     physics::{MovementAcceleration, MovementDampingFactor},
+    target::TargetBehavior,
 };
+
+pub const PLAYER_DEFAULT_SPEED: f32 = 10.0;
+pub const PLAYER_BOOST_SPEED: f32 = 20.0;
 
 pub struct PlayerPlugin;
 
@@ -22,7 +27,7 @@ impl Plugin for PlayerPlugin {
             .add_observer(apply_rotation)
             .add_observer(apply_toggle_menu)
             .add_observer(apply_toggle_cursor)
-            .add_systems(OnEnter(AppState::Playing), setup)
+            .add_systems(OnEnter(SetupState::Entities), setup)
             .add_systems(OnEnter(PlayingState::Playing), enable_controls)
             .add_systems(OnExit(PlayingState::Playing), disable_controls)
             .add_systems(
@@ -32,16 +37,12 @@ impl Plugin for PlayerPlugin {
     }
 }
 
-fn setup(
-    mut commands: Commands,
-    mut meshes: ResMut<Assets<Mesh>>,
-    mut materials: ResMut<Assets<StandardMaterial>>,
-) {
+fn setup(mut commands: Commands, handles: Res<LevelAssetHandles>) {
+    info!("Spawning Player");
     let mut player = commands.spawn((
         DespawnOnExit(AppState::Playing),
-        Mesh3d(meshes.add(Cuboid::new(1.0, 1.0, 1.0))),
-        MeshMaterial3d(materials.add(Color::srgb_u8(124, 144, 255))),
         Transform::from_xyz(0.0, 0.5, 0.0),
+        SceneRoot(handles.player.clone()),
         Name::new("Player"),
         Player,
         PlayerHitEntities(HashSet::new()),
@@ -49,8 +50,9 @@ fn setup(
         RigidBody::Kinematic,
         Collider::cuboid(1.0, 1.0, 1.0),
         CustomPositionIntegration,
-        MovementAcceleration(10.0),
+        MovementAcceleration(PLAYER_DEFAULT_SPEED),
         MovementDampingFactor(0.4),
+        TargetBehavior::Mice,
         // Character3dBundle {
         //     character: todo!(),
         //     settings: todo!(),
@@ -195,11 +197,19 @@ fn apply_movement(
         With<Player>,
     >,
     anchor: Single<&Transform, With<PlayerCameraAnchorY>>,
+    time: Res<Time>,
+    mut speed: Local<f32>,
 ) {
     let (mut lin_vel, max_acceleration, damping) = player.into_inner();
 
-    let mut velocity =
-        movement.value.extend(0.0).xzy() * Vec3::new(-1.0, 1.0, 1.0) * max_acceleration.0;
+    if *speed < f32::EPSILON {
+        *speed = max_acceleration.0;
+    }
+
+    // smooth speed change
+    *speed = speed.lerp(max_acceleration.0, 10.0 * time.delta_secs());
+
+    let mut velocity = movement.value.extend(0.0).xzy() * Vec3::new(-1.0, 1.0, 1.0) * *speed;
 
     velocity = anchor.rotation * velocity;
 
