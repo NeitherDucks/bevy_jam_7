@@ -4,8 +4,7 @@ use bevy::prelude::*;
 use crate::{
     game::{AppState, PlayingState, SetupState},
     physics::MovementAcceleration,
-    player::Player,
-    target::{Target, TargetBehavior},
+    target::TargetBehavior,
 };
 
 pub struct AnimPlugin;
@@ -36,6 +35,7 @@ fn setup_bone_chain(
     names: Query<(Entity, &Name)>,
     child_of: Query<&ChildOf>,
     children: Query<&Children>,
+    global_transforms: Query<&GlobalTransform>,
     mut next_state: ResMut<NextState<AppState>>,
 ) {
     for (entity, name) in names {
@@ -78,8 +78,39 @@ fn setup_bone_chain(
             parent = p.0;
         }
 
+        // Init verlet tail state
+        let mut points = Vec::with_capacity(bones.len());
+
+        let bone_transforms = bones
+            .iter()
+            .map(|bone| {
+                global_transforms
+                    .get(*bone)
+                    .expect("Bones should already exists")
+                    .compute_transform()
+            })
+            .collect::<Vec<_>>();
+
+        for (i, transform) in bone_transforms.iter().enumerate() {
+            let pos = transform.translation;
+            let rotation = transform.rotation;
+            points.push(VerletPoint {
+                current: pos,
+                previous: pos,
+                rest_rotation: rotation,
+                segment_length: if i == 0 {
+                    0.0
+                } else {
+                    pos.distance(bone_transforms[i - 1].translation)
+                },
+            });
+        }
+
         // Store the bone chain
-        commands.entity(parent).insert(BoneChain(bones));
+        commands
+            .entity(parent)
+            .insert(BoneChain(bones))
+            .insert(VerletTailState { points });
     }
 
     next_state.set(AppState::Playing);
@@ -103,7 +134,7 @@ fn orient_to_vel(
 
         let aim = transform.rotation.rotate_towards(
             Quat::from_rotation_arc(Vec3::Z, vel),
-            720.0f32.to_radians() * time.delta_secs() * speed.0 * 0.1,
+            720.0f32.to_radians() * time.delta_secs() * speed.current * 0.1,
         );
 
         transform.rotation = aim;
@@ -112,13 +143,16 @@ fn orient_to_vel(
 
 // FIX: Compute tail in 2d then convert back to 3d to avoid bone twist, if any
 fn update_tail(
-    query: Query<(&BoneChain, &MovementAcceleration, &TargetBehavior)>,
+    mut query: Query<(
+        &BoneChain,
+        &MovementAcceleration,
+        &TargetBehavior,
+        &mut VerletTailState,
+    )>,
     time: Res<Time>,
-    mut transforms: Query<(&mut Transform, &GlobalTransform), (Without<Player>, Without<Target>)>,
-    mut tail_state: Local<VerletTailState>,
-    mut speed: Local<f32>,
+    mut transforms: Query<(&mut Transform, &GlobalTransform)>,
 ) {
-    for (bone_chain, max_acceleration, behavior) in &query {
+    for (bone_chain, speed, behavior, mut tail_state) in &mut query {
         if behavior != &TargetBehavior::Mice {
             continue;
         }
@@ -128,14 +162,6 @@ fn update_tail(
         let Ok((_, &anchor)) = transforms.get_mut(bones[0]) else {
             return;
         };
-
-        if *speed < f32::EPSILON {
-            // Not actual speed, but don't want springy rat all the time, so max_accel it is
-            *speed = max_acceleration.0;
-        }
-
-        // smooth speed change
-        *speed = speed.lerp(max_acceleration.0, 10.0 * time.delta_secs());
 
         // Init state, if needed
         if tail_state.points.len() != bones.len() {
@@ -190,8 +216,8 @@ fn update_tail(
                 let current = tail_state.points[i].current;
                 let delta = current - parent;
 
-                tail_state.points[i].current =
-                    parent + delta.normalize() * tail_state.points[i].segment_length * *speed * 0.1;
+                tail_state.points[i].current = parent
+                    + delta.normalize() * tail_state.points[i].segment_length * speed.current * 0.1;
             }
         }
 
@@ -222,7 +248,7 @@ fn update_tail(
     }
 }
 
-#[derive(Default)]
+#[derive(Default, Component)]
 struct VerletTailState {
     points: Vec<VerletPoint>,
 }

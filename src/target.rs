@@ -70,7 +70,7 @@ impl TargetBundle {
             transform: Transform::from_translation(position),
             rigid_body: RigidBody::Dynamic,
             collider: Collider::cuboid(1.0, 1.0, 1.0),
-            acceleration: MovementAcceleration(TARGET_DEFAULT_SPEED),
+            acceleration: MovementAcceleration::new(TARGET_DEFAULT_SPEED),
             damping: MovementDampingFactor(0.4),
             position_intergration: CustomPositionIntegration,
             marker: Target,
@@ -102,7 +102,7 @@ fn move_agents(
     )>,
 ) {
     for (entity, mut lin_vel, max_acceleration, damping, desired_vel, has_timer) in agent {
-        lin_vel.0 = desired_vel.velocity().normalize_or_zero() * max_acceleration.0;
+        lin_vel.0 = desired_vel.velocity().normalize_or_zero() * max_acceleration.current;
 
         let current_speed = lin_vel.length();
         if current_speed > 1.0 {

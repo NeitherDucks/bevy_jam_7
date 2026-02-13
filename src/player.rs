@@ -50,7 +50,7 @@ fn setup(mut commands: Commands, handles: Res<LevelAssetHandles>) {
         RigidBody::Kinematic,
         Collider::cuboid(1.0, 1.0, 1.0),
         CustomPositionIntegration,
-        MovementAcceleration(PLAYER_DEFAULT_SPEED),
+        MovementAcceleration::new(PLAYER_DEFAULT_SPEED),
         MovementDampingFactor(0.4),
         TargetBehavior::Mice,
         // Character3dBundle {
@@ -191,25 +191,23 @@ fn apply_movement(
     player: Single<
         (
             &mut LinearVelocity,
-            &MovementAcceleration,
+            &mut MovementAcceleration,
             &MovementDampingFactor,
         ),
         With<Player>,
     >,
     anchor: Single<&Transform, With<PlayerCameraAnchorY>>,
     time: Res<Time>,
-    mut speed: Local<f32>,
 ) {
-    let (mut lin_vel, max_acceleration, damping) = player.into_inner();
-
-    if *speed < f32::EPSILON {
-        *speed = max_acceleration.0;
-    }
+    let (mut lin_vel, mut max_acceleration, damping) = player.into_inner();
 
     // smooth speed change
-    *speed = speed.lerp(max_acceleration.0, 10.0 * time.delta_secs());
+    max_acceleration.current = max_acceleration
+        .current
+        .lerp(max_acceleration.target, 10.0 * time.delta_secs());
 
-    let mut velocity = movement.value.extend(0.0).xzy() * Vec3::new(-1.0, 1.0, 1.0) * *speed;
+    let mut velocity =
+        movement.value.extend(0.0).xzy() * Vec3::new(-1.0, 1.0, 1.0) * max_acceleration.current;
 
     velocity = anchor.rotation * velocity;
 

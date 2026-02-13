@@ -64,6 +64,7 @@ fn tick_timers(
     mut commands: Commands,
     mut despawn_timer: Query<(Entity, &mut DespawnTimer)>,
     mut powerup_timer: Query<(Entity, &mut PowerupTimer)>,
+    mut acceleration: Query<&mut MovementAcceleration>,
     time: Res<Time>,
 ) {
     for (entity, mut timer) in &mut despawn_timer {
@@ -78,10 +79,11 @@ fn tick_timers(
         timer.0.tick(time.delta());
 
         if timer.0.just_finished() {
-            commands
-                .entity(entity)
-                .remove::<PowerupTimer>()
-                .insert(MovementAcceleration(PLAYER_DEFAULT_SPEED));
+            commands.entity(entity).remove::<PowerupTimer>();
+
+            if let Ok(mut acceleration) = acceleration.get_mut(entity) {
+                acceleration.target = PLAYER_DEFAULT_SPEED;
+            }
         }
     }
 }

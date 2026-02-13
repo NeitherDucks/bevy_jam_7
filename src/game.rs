@@ -332,6 +332,7 @@ fn check_for_hit(
     mut player: Single<(Entity, &mut PlayerHitEntities)>,
     targets: Query<Entity, With<Target>>,
     powerups: Query<Entity, With<Powerup>>,
+    mut acceleration: Query<&mut MovementAcceleration>,
     mut game_state: ResMut<GameState>,
     mut next_state: ResMut<NextState<AppState>>,
 ) {
@@ -349,8 +350,11 @@ fn check_for_hit(
         } else if powerups.contains(entity) {
             commands
                 .entity(player_entity)
-                .insert(MovementAcceleration(PLAYER_BOOST_SPEED))
                 .insert(PowerupTimer::default());
+
+            if let Ok(mut acceleration) = acceleration.get_mut(player_entity) {
+                acceleration.target = PLAYER_BOOST_SPEED;
+            }
 
             commands.entity(entity).despawn();
         }

@@ -87,8 +87,20 @@ fn run_move_and_slide(
 #[component(storage = "SparseSet")]
 pub struct Grounded;
 
-#[derive(Component)]
-pub struct MovementAcceleration(pub Scalar);
+#[derive(Reflect, Component)]
+pub struct MovementAcceleration {
+    pub current: f32,
+    pub target: f32,
+}
+
+impl MovementAcceleration {
+    pub fn new(target: f32) -> Self {
+        Self {
+            current: target,
+            target,
+        }
+    }
+}
 
 #[derive(Component)]
 pub struct MovementDampingFactor(pub Scalar);
