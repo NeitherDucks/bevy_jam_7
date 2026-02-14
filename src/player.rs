@@ -1,4 +1,4 @@
-use avian3d::{math::AdjustPrecision, prelude::*};
+use avian3d::prelude::*;
 use bevy::{
     platform::collections::HashSet,
     prelude::*,
@@ -10,12 +10,13 @@ use bevy_enhanced_input::prelude::*;
 use crate::{
     game::{AppState, PlayingState, SetupState},
     loader::LevelAssetHandles,
-    physics::{MovementAcceleration, MovementDampingFactor},
+    physics::{DAMP_FACTOR, Grounded, MaxSlopeAngle, MovementAcceleration, MovementDampingFactor},
     target::TargetBehavior,
 };
 
 pub const PLAYER_DEFAULT_SPEED: f32 = 10.0;
-pub const PLAYER_BOOST_SPEED: f32 = 20.0;
+pub const PLAYER_BOOST_SPEED: f32 = PLAYER_DEFAULT_SPEED * 2.0;
+pub const PLAYER_SPEED_FACTOR: f32 = 1.0 / PLAYER_DEFAULT_SPEED;
 
 pub struct PlayerPlugin;
 
@@ -32,26 +33,41 @@ impl Plugin for PlayerPlugin {
             .add_systems(OnExit(PlayingState::Playing), disable_controls)
             .add_systems(
                 Update,
-                update_camera_pos.run_if(in_state(PlayingState::Playing)),
+                (update_camera_pos).run_if(in_state(PlayingState::Playing)),
             );
     }
 }
 
 fn setup(mut commands: Commands, handles: Res<LevelAssetHandles>) {
     info!("Spawning Player");
-    let mut player = commands.spawn((
+
+    let collider = Collider::capsule_endpoints(
+        0.35,
+        Vec3::new(0.0, 0.35 * 0.5, -0.2),
+        Vec3::new(0.0, 0.35 * 0.5, -1.0),
+    );
+    let mut caster_shape = collider.clone();
+    caster_shape.set_scale(Vec3::ONE * 0.99, 10);
+
+    commands.spawn((
         DespawnOnExit(AppState::Playing),
-        Transform::from_xyz(0.0, 0.5, 0.0),
+        Transform::from_xyz(0.0, 0.35 * 0.5, 0.0),
         SceneRoot(handles.player.clone()),
         Name::new("Player"),
         Player,
         PlayerHitEntities(HashSet::new()),
         CharacterController,
-        RigidBody::Kinematic,
-        Collider::cuboid(1.0, 1.0, 1.0),
-        CustomPositionIntegration,
-        MovementAcceleration::new(PLAYER_DEFAULT_SPEED),
-        MovementDampingFactor(0.4),
+        (
+            RigidBody::Dynamic,
+            collider,
+            ShapeCaster::new(caster_shape, Vec3::ZERO, Quat::IDENTITY, Dir3::NEG_Y),
+            CollisionEventsEnabled,
+            // CustomPositionIntegration,
+            MovementAcceleration::new(PLAYER_DEFAULT_SPEED),
+            MovementDampingFactor(DAMP_FACTOR),
+            LockedAxes::new().lock_rotation_x().lock_rotation_z(),
+            MaxSlopeAngle(35.0f32.to_radians()),
+        ),
         TargetBehavior::Mice,
         // Character3dBundle {
         //     character: todo!(),
@@ -62,7 +78,7 @@ fn setup(mut commands: Commands, handles: Res<LevelAssetHandles>) {
             Player[(
                 Action::<Movement>::new(),
                 DeadZone::default(),
-                SmoothNudge::default(),
+                // SmoothNudge::default(),
                 Bindings::spawn((
                     Cardinal::wasd_keys(), Axial::left_stick()))
             ),
@@ -88,9 +104,8 @@ fn setup(mut commands: Commands, handles: Res<LevelAssetHandles>) {
             )
             ]
         ),
+        ContextActivity::<Player>::INACTIVE
     ));
-
-    player.insert(ContextActivity::<Player>::INACTIVE);
 
     commands.spawn((
         Name::new("Camera anchor"),
@@ -98,13 +113,12 @@ fn setup(mut commands: Commands, handles: Res<LevelAssetHandles>) {
         Transform::IDENTITY,
         PlayerCameraAnchorY,
         children![(
-            DespawnOnExit(AppState::Playing),
             Transform::from_rotation(Quat::from_rotation_x(10.0f32.to_radians())),
             PlayerCameraAnchorX,
             children![(
-                DespawnOnExit(AppState::Playing),
-                Camera3d::default(),
                 Transform::from_xyz(0.0, 0.0, -20.0).looking_at(Vec3::ZERO, Vec3::Y),
+                Name::new("Player Camera"),
+                Camera3d::default(),
                 PlayerCamera,
             )],
         )],
@@ -192,33 +206,32 @@ fn apply_movement(
         (
             &mut LinearVelocity,
             &mut MovementAcceleration,
-            &MovementDampingFactor,
+            Has<Grounded>,
         ),
         With<Player>,
     >,
     anchor: Single<&Transform, With<PlayerCameraAnchorY>>,
     time: Res<Time>,
 ) {
-    let (mut lin_vel, mut max_acceleration, damping) = player.into_inner();
+    let (mut lin_vel, mut max_acceleration, is_grounded) = player.into_inner();
+
+    if !is_grounded {
+        return;
+    }
 
     // smooth speed change
     max_acceleration.current = max_acceleration
         .current
-        .lerp(max_acceleration.target, 10.0 * time.delta_secs());
+        .lerp(max_acceleration.target, time.delta_secs());
 
-    let mut velocity =
-        movement.value.extend(0.0).xzy() * Vec3::new(-1.0, 1.0, 1.0) * max_acceleration.current;
+    let mut velocity = movement.value.extend(0.0).xzy().normalize_or_zero()
+        * Vec3::new(-1.0, 1.0, 1.0)
+        * max_acceleration.current;
 
     velocity = anchor.rotation * velocity;
 
-    lin_vel.0 += velocity.adjust_precision();
-
-    let current_speed = lin_vel.length();
-    if current_speed > 1.0 {
-        lin_vel.0 *= 1.0 - damping.0;
-    } else {
-        lin_vel.0 = Vec3::ZERO;
-    }
+    lin_vel.0.x += velocity.x;
+    lin_vel.0.z += velocity.z;
 }
 
 fn apply_rotation(

@@ -2,7 +2,11 @@ use std::time::Duration;
 
 use avian_rerecast::prelude::*;
 use avian3d::prelude::*;
-use bevy::{prelude::*, time::common_conditions::on_timer};
+use bevy::{
+    gltf::{GltfMesh, GltfNode},
+    prelude::*,
+    time::common_conditions::on_timer,
+};
 use bevy_landmass::{
     Archipelago3d, ArchipelagoOptions, ArchipelagoRef3d, FromAgentRadius, Island, Landmass3dPlugin,
 };
@@ -30,7 +34,7 @@ impl Plugin for EnvironmentPlugin {
         .add_systems(
             Update,
             wait_for_navmesh
-                .run_if(in_state(SetupState::Environment).and(on_timer(Duration::from_millis(50)))),
+                .run_if(on_timer(Duration::from_millis(50)).and(in_state(SetupState::Environment))),
         );
 
         #[cfg(feature = "dev")]
@@ -38,24 +42,97 @@ impl Plugin for EnvironmentPlugin {
     }
 }
 
-fn setup(mut commands: Commands, meshes: ResMut<Assets<Mesh>>, handles: Res<LevelAssetHandles>) {
+#[allow(clippy::too_many_lines)]
+fn setup(
+    mut commands: Commands,
+    gltf: Res<Assets<Gltf>>,
+    gltf_nodes: Res<Assets<GltfNode>>,
+    gltf_meshes: Res<Assets<GltfMesh>>,
+    meshes: Res<Assets<Mesh>>,
+    handles: Res<LevelAssetHandles>,
+) {
     info!("Spawning environment");
-    commands.spawn((
-        SceneRoot(handles.environment.clone()),
-        DespawnOnExit(AppState::Playing),
-    ));
-
-    info!("Spawning collisions");
-    let collision_mesh = meshes.get(handles.collisions.id()).unwrap();
 
     commands.spawn((
-        Transform::IDENTITY,
         InheritedVisibility::HIDDEN,
-        RigidBody::Static,
-        Collider::trimesh_from_mesh(collision_mesh).unwrap(),
+        Transform::IDENTITY,
         DespawnOnExit(AppState::Playing),
+        Name::new("Groud plane"),
+        RigidBody::Static,
+        Collider::half_space(Vec3::Y),
     ));
 
+    let gltf = gltf.get(handles.environment.id()).unwrap();
+
+    let material = &gltf.materials[0];
+
+    commands
+        .spawn((
+            InheritedVisibility::VISIBLE,
+            Transform::IDENTITY,
+            DespawnOnExit(AppState::Playing),
+            Name::new("Environment"),
+        ))
+        .with_children(|builder| {
+            let mut nodes = gltf
+                .nodes
+                .iter()
+                .map(|node| (node, Transform::IDENTITY))
+                .collect::<Vec<_>>();
+
+            let mut new_meshes = Vec::new();
+
+            while let Some((node, parent_transform)) = nodes.pop() {
+                let Some(node) = gltf_nodes.get(node.id()) else {
+                    continue;
+                };
+
+                let transform = parent_transform * node.transform;
+
+                if let Some(handle) = &node.mesh
+                    && let Some(mesh) = gltf_meshes.get(handle.id())
+                {
+                    for prim in &mesh.primitives {
+                        let (col, hide) = if let Some(extras) = &mesh.extras {
+                            (extras.value.contains("col"), extras.value.contains("hide"))
+                        } else {
+                            (false, false)
+                        };
+
+                        new_meshes.push((&prim.mesh, transform, &prim.name, col, hide));
+                    }
+                }
+
+                for child in &node.children {
+                    nodes.push((child, transform));
+                }
+            }
+
+            for (handle_mesh, transform, name, col, hide) in new_meshes {
+                let Some(mesh) = meshes.get(handle_mesh.id()) else {
+                    continue;
+                };
+
+                let mut entity = builder.spawn((
+                    if hide {
+                        Visibility::Hidden
+                    } else {
+                        Visibility::Inherited
+                    },
+                    Name::new(name.clone()),
+                    transform,
+                    Mesh3d(handle_mesh.clone()),
+                    MeshMaterial3d(material.clone()),
+                    RigidBody::Static,
+                ));
+
+                if col {
+                    entity.insert(Collider::convex_decomposition_from_mesh(mesh).unwrap());
+                }
+            }
+        });
+
+    // Lights
     info!("Spawning lights");
     commands.insert_resource(GlobalAmbientLight {
         color: Color::WHITE,
@@ -63,7 +140,6 @@ fn setup(mut commands: Commands, meshes: ResMut<Assets<Mesh>>, handles: Res<Leve
         ..Default::default()
     });
 
-    // Lights
     commands.spawn((
         DirectionalLight {
             illuminance: 28000.0,

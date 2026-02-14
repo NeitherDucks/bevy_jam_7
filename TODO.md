@@ -10,7 +10,7 @@ In order
 - [x] Orient mice to movement direction
 - [x] Gravity
   - [x] Check if the player is below ground and make them respawn
-- [ ] Target model (mice atm)
+- [x] Target model (mice atm)
 - [ ] Camera collisions
 - [x] Power ups
 - [ ] Better UI ( Icon for targets, Juice )
@@ -20,11 +20,13 @@ In order
 - [ ] Music
 
 BUGS:
+- [ ] Something is wrong with how velocity is calculated / apply / interacts with controller
 - [x] Sometime targets don't spawn
-- [ ] Targets spawn "inside" collisions (make collision solid so the there is no navmeshes inside the collisions)
+- [x] Targets spawn "inside" collisions (make collision solid so the there is no navmeshes inside the collisions)
   - Check for stuck targets and have them respawn?
 - [x] Restarting a game after loosing make the game crash
   - The game needs a proper reset procedure
+- [ ] Sometimes targets don't move (for longer than their idle time)
 
 In no order
 

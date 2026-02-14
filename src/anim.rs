@@ -4,6 +4,7 @@ use bevy::prelude::*;
 use crate::{
     game::{AppState, PlayingState, SetupState},
     physics::MovementAcceleration,
+    player::PLAYER_SPEED_FACTOR,
     target::TargetBehavior,
 };
 
@@ -134,13 +135,17 @@ fn orient_to_vel(
 
         let aim = transform.rotation.rotate_towards(
             Quat::from_rotation_arc(Vec3::Z, vel),
-            720.0f32.to_radians() * time.delta_secs() * speed.current * 0.1,
+            520.0f32.to_radians() * time.delta_secs() * speed.current * 0.1,
         );
 
         transform.rotation = aim;
     }
 }
 
+// FIX: Switch to Avian physics chain
+//      - Spawn entity per joint
+//      - Add SphericalJoint constraint
+//      - On update, apply joint entity transform to join (in local space)
 // FIX: Compute tail in 2d then convert back to 3d to avoid bone twist, if any
 fn update_tail(
     mut query: Query<(
@@ -217,7 +222,10 @@ fn update_tail(
                 let delta = current - parent;
 
                 tail_state.points[i].current = parent
-                    + delta.normalize() * tail_state.points[i].segment_length * speed.current * 0.1;
+                    + delta.normalize()
+                        * tail_state.points[i].segment_length
+                        * speed.current
+                        * PLAYER_SPEED_FACTOR;
             }
         }
 

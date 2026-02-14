@@ -6,7 +6,7 @@ use bevy_landmass::{
 
 use crate::{
     game::{AppState, PlayingState, get_random_position_on_navmesh},
-    physics::{MovementAcceleration, MovementDampingFactor},
+    physics::{DAMP_FACTOR, MovementAcceleration, MovementDampingFactor},
 };
 
 const TARGET_DEFAULT_SPEED: f32 = 10.0;
@@ -53,6 +53,8 @@ pub struct TargetBundle {
     transform: Transform,
     rigid_body: RigidBody,
     collider: Collider,
+    collision_event_enabled: CollisionEventsEnabled,
+    shape_caster: ShapeCaster,
     acceleration: MovementAcceleration,
     damping: MovementDampingFactor,
     position_intergration: CustomPositionIntegration,
@@ -65,13 +67,23 @@ pub struct TargetBundle {
 
 impl TargetBundle {
     pub fn new(mesh: Handle<Scene>, position: Vec3, navmesh: Entity) -> Self {
+        let collider = Collider::capsule_endpoints(
+            0.35,
+            Vec3::new(0.0, 0.35 * 0.5, -0.2),
+            Vec3::new(0.0, 0.35 * 0.5, -1.0),
+        );
+        let mut caster_shape = collider.clone();
+        caster_shape.set_scale(Vec3::ONE * 0.99, 10);
+
         Self {
             mesh: SceneRoot(mesh),
             transform: Transform::from_translation(position),
             rigid_body: RigidBody::Dynamic,
-            collider: Collider::cuboid(1.0, 1.0, 1.0),
+            collider,
+            collision_event_enabled: CollisionEventsEnabled,
+            shape_caster: ShapeCaster::new(caster_shape, Vec3::ZERO, Quat::IDENTITY, Dir3::NEG_Y),
             acceleration: MovementAcceleration::new(TARGET_DEFAULT_SPEED),
-            damping: MovementDampingFactor(0.4),
+            damping: MovementDampingFactor(DAMP_FACTOR),
             position_intergration: CustomPositionIntegration,
             marker: Target,
             agent: Agent3dBundle {
