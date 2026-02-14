@@ -16,7 +16,10 @@ impl Plugin for AnimPlugin {
             .add_systems(OnEnter(SetupState::Animation), setup_bone_chain)
             .add_systems(
                 Update,
-                orient_to_vel.run_if(in_state(PlayingState::Playing)),
+                (
+                    on_play_animation,
+                    orient_to_vel.run_if(in_state(PlayingState::Playing)),
+                ),
             )
             .add_systems(
                 PostUpdate,
@@ -25,11 +28,50 @@ impl Plugin for AnimPlugin {
     }
 }
 
-#[derive(Reflect, Component)]
-struct BoneChain([Entity; 9]);
+// ------------------------------------------------------------------------------------------------------
 
 #[derive(Reflect, Component)]
-struct PreviousTransform(Transform);
+pub struct PlayAnimation {
+    pub graph: Handle<AnimationGraph>,
+    pub index: AnimationNodeIndex,
+}
+
+#[derive(Component)]
+pub struct IgnorePlayingState;
+
+fn on_play_animation(
+    mut commands: Commands,
+    query: Query<(Entity, &PlayAnimation, Has<IgnorePlayingState>)>,
+    children: Query<&Children>,
+    mut players: Query<&mut AnimationPlayer>,
+    playing_state: Option<Res<State<PlayingState>>>,
+) {
+    let playing_state = playing_state
+        .filter(|state| **state == PlayingState::Playing)
+        .is_some();
+
+    for (entity, animation, force) in &query {
+        if !force && !playing_state {
+            continue;
+        }
+
+        for child in children.iter_descendants(entity) {
+            if let Ok(mut player) = players.get_mut(child) {
+                player.play(animation.index);
+
+                commands
+                    .entity(child)
+                    .insert(AnimationGraphHandle(animation.graph.clone()));
+                commands.entity(entity).remove::<PlayAnimation>();
+            }
+        }
+    }
+}
+
+// ------------------------------------------------------------------------------------------------------
+
+#[derive(Reflect, Component)]
+struct BoneChain([Entity; 9]);
 
 fn setup_bone_chain(
     mut commands: Commands,

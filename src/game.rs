@@ -17,8 +17,10 @@ impl Plugin for GamePlugin {
     fn build(&self, app: &mut App) {
         app.init_state::<AppState>()
             .register_type::<GameState>()
-            .add_sub_state::<PlayingState>()
+            .add_sub_state::<MenuState>()
+            .add_sub_state::<LoadingState>()
             .add_sub_state::<SetupState>()
+            .add_sub_state::<PlayingState>()
             .init_resource::<GameState>()
             .init_resource::<GameSettings>()
             .add_systems(
@@ -49,8 +51,10 @@ impl Plugin for GamePlugin {
             Update,
             (
                 bevy::dev_tools::states::log_transitions::<AppState>,
-                bevy::dev_tools::states::log_transitions::<PlayingState>,
+                bevy::dev_tools::states::log_transitions::<MenuState>,
+                bevy::dev_tools::states::log_transitions::<LoadingState>,
                 bevy::dev_tools::states::log_transitions::<SetupState>,
+                bevy::dev_tools::states::log_transitions::<PlayingState>,
             ),
         );
     }
@@ -58,13 +62,29 @@ impl Plugin for GamePlugin {
 
 #[derive(Clone, Debug, Default, PartialEq, Eq, Hash, States)]
 pub enum AppState {
-    MainMenu,
-    SettingsMenu,
     #[default]
+    MainMenu,
     Loading,
     Setup,
     Playing,
     ScoreMenu,
+}
+
+#[derive(Clone, Debug, Default, PartialEq, Eq, Hash, SubStates)]
+#[source(AppState = AppState::MainMenu)]
+pub enum MenuState {
+    #[default]
+    Main,
+    Settings,
+}
+
+#[derive(Clone, Debug, Default, PartialEq, Eq, Hash, SubStates)]
+#[source(AppState = AppState::Loading)]
+pub enum LoadingState {
+    #[default]
+    TransitionIn,
+    Waiting,
+    TransitionOut,
 }
 
 #[derive(Clone, Debug, Default, PartialEq, Eq, Hash, SubStates)]
@@ -80,6 +100,7 @@ pub enum SetupState {
 #[source(AppState = AppState::Playing)]
 pub enum PlayingState {
     #[default]
+    Starting,
     Playing,
     Paused,
     SettingsMenu,

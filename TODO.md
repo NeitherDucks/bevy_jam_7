@@ -11,7 +11,7 @@ In order
 - [x] Gravity
   - [x] Check if the player is below ground and make them respawn
 - [x] Target model (mice atm)
-- [ ] Load transitions
+- [x] Load transitions
 - [ ] Better UI
   - [ ] Background
   - [ ] Icons
@@ -19,7 +19,7 @@ In order
     - [ ] Timer gets red when low on time (10 sec)
     - [ ] Target counter pops when picking up a target
 - [ ] Better Menu
-  - [ ] Proper spacing
+  - [x] Proper spacing
   - [ ] Popup on hover
 - [x] Power ups
 - [ ] Lights definition per levels (From blender?)
@@ -40,6 +40,12 @@ In order
 - [ ] Better Target AI
 - [ ] Change rat tail to physics joints
 - [ ] Camera collisions / physics
+- [ ] Adjust shadow settings
+  - CascadeShadowConfigBuilder {
+              first_cascade_far_bound: 200.0,
+              maximum_distance: 400.0,
+              ..default()
+          }
 
 BUGS:
 - [x] Something is wrong with how velocity is calculated / apply / interacts with controller
@@ -50,3 +56,7 @@ BUGS:
   - The game needs a proper reset procedure
 - [ ] Sometimes targets don't move (for longer than their idle time)
 - [ ] Powerup moves it's collider
+
+REFACTOR:
+- [ ] On<SceneInstanceReady>
+- [ ] children.iter_descendants(entity)

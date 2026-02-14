@@ -9,7 +9,7 @@ use bevy_enhanced_input::prelude::*;
 
 use crate::{
     game::{AppState, PlayingState, SetupState},
-    loader::LevelAssetHandles,
+    loader::PermanentAssetHandles,
     physics::{DAMP_FACTOR, Grounded, MaxSlopeAngle, MovementAcceleration, MovementDampingFactor},
     target::TargetBehavior,
 };
@@ -24,21 +24,21 @@ impl Plugin for PlayerPlugin {
     fn build(&self, app: &mut App) {
         app.add_plugins(EnhancedInputPlugin)
             .add_input_context::<Player>()
-            .add_observer(apply_movement)
-            .add_observer(apply_rotation)
-            .add_observer(apply_toggle_menu)
-            .add_observer(apply_toggle_cursor)
             .add_systems(OnEnter(SetupState::Entities), setup)
             .add_systems(OnEnter(PlayingState::Playing), enable_controls)
             .add_systems(OnExit(PlayingState::Playing), disable_controls)
             .add_systems(
                 Update,
                 (update_camera_pos).run_if(in_state(PlayingState::Playing)),
-            );
+            )
+            .add_observer(apply_movement)
+            .add_observer(apply_rotation)
+            .add_observer(apply_toggle_menu)
+            .add_observer(apply_toggle_cursor);
     }
 }
 
-fn setup(mut commands: Commands, handles: Res<LevelAssetHandles>) {
+fn setup(mut commands: Commands, handles: Res<PermanentAssetHandles>) {
     info!("Spawning Player");
 
     let collider = Collider::capsule_endpoints(

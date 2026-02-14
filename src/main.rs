@@ -38,7 +38,13 @@ fn main() {
         bevy_inspector_egui::bevy_egui::EguiPlugin::default(),
         bevy_inspector_egui::quick::WorldInspectorPlugin::new(),
         bevy_inspector_egui::quick::ResourceInspectorPlugin::<game::GameState>::new(),
-    ));
+    ))
+    .add_systems(PreStartup, setup_egui);
 
     app.run();
+}
+
+#[cfg(feature = "dev")]
+fn setup_egui(mut egui_settings: ResMut<bevy_inspector_egui::bevy_egui::EguiGlobalSettings>) {
+    egui_settings.auto_create_primary_context = false;
 }

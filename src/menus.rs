@@ -1,6 +1,7 @@
 use bevy::{input_focus::InputFocus, prelude::*};
+use bevy_inspector_egui::bevy_egui::{EguiContext, PrimaryEguiContext};
 
-use crate::game::{AppState, GameSettings, GameState, PlayingState};
+use crate::game::{AppState, GameSettings, GameState, LoadingState, MenuState, PlayingState};
 
 const MENUS_BG_COLOR: BackgroundColor = BackgroundColor(Color::linear_rgba(0.05, 0.05, 0.08, 0.8));
 
@@ -10,9 +11,12 @@ impl Plugin for MenusPlugin {
     fn build(&self, app: &mut App) {
         app.init_resource::<Fonts>()
             .init_resource::<InputFocus>()
-            .add_systems(OnEnter(AppState::MainMenu), setup_main_menu)
-            .add_systems(OnEnter(AppState::SettingsMenu), setup_settings_menu)
-            .add_systems(OnExit(AppState::SettingsMenu), cleanup::<SettingsMenuTag>)
+            .add_systems(Startup, setup)
+            .add_systems(OnEnter(MenuState::Main), setup_main_menu)
+            .add_systems(OnEnter(MenuState::Settings), cleanup::<MainMenuTag>)
+            .add_systems(OnEnter(LoadingState::Waiting), cleanup::<MainMenuTag>)
+            .add_systems(OnEnter(MenuState::Settings), setup_settings_menu)
+            .add_systems(OnExit(MenuState::Settings), cleanup::<SettingsMenuTag>)
             .add_systems(
                 OnEnter(PlayingState::SettingsMenu),
                 setup_playing_settings_menu,
@@ -48,15 +52,29 @@ impl FromWorld for Fonts {
     }
 }
 
+fn setup(mut commands: Commands) {
+    commands.spawn((
+        Camera2d,
+        Camera {
+            order: 2,
+            clear_color: ClearColorConfig::Custom(Color::NONE),
+            ..Default::default()
+        },
+        Name::new("UI Camera"),
+        IsDefaultUiCamera,
+        EguiContext::default(),
+        PrimaryEguiContext,
+    ));
+}
+
 #[derive(Component)]
 struct MainMenuTag;
 
 fn setup_main_menu(mut commands: Commands, fonts: Res<Fonts>) {
-    commands.spawn((MainMenuTag, Camera2d, DespawnOnExit(AppState::MainMenu)));
     commands.spawn((
         MainMenuTag,
-        DespawnOnExit(AppState::MainMenu),
         (
+            BackgroundColor(Color::linear_rgb(0.2, 0.2, 0.2)),
             Node {
                 width: percent(100),
                 height: percent(100),
@@ -67,10 +85,11 @@ fn setup_main_menu(mut commands: Commands, fonts: Res<Fonts>) {
             children![(
                 Node {
                     width: percent(50),
-                    height: percent(40),
+                    height: percent(60),
                     flex_direction: FlexDirection::Column,
                     align_items: AlignItems::Center,
-                    justify_content: JustifyContent::SpaceBetween,
+                    justify_content: JustifyContent::Center,
+                    row_gap: px(24),
                     ..Default::default()
                 },
                 children![
@@ -100,7 +119,6 @@ fn setup_main_menu(mut commands: Commands, fonts: Res<Fonts>) {
 struct SettingsMenuTag;
 
 fn setup_settings_menu(mut commands: Commands, fonts: Res<Fonts>, settings: Res<GameSettings>) {
-    commands.spawn((SettingsMenuTag, Camera2d));
     commands.spawn((
         SettingsMenuTag,
         (
@@ -111,7 +129,7 @@ fn setup_settings_menu(mut commands: Commands, fonts: Res<Fonts>, settings: Res<
                 justify_content: JustifyContent::Center,
                 ..Default::default()
             },
-            children![settings_ui(&fonts, &settings, UiEvents::MainMenu)],
+            children![settings_ui(&fonts, &settings, UiEvents::MainMenuLocal)],
         ),
     ));
 }
@@ -277,8 +295,9 @@ fn setup_pause_menu(mut commands: Commands, fonts: Res<Fonts>) {
             children![(
                 Node {
                     width: percent(50),
-                    height: percent(40),
+                    height: percent(60),
                     flex_direction: FlexDirection::Column,
+                    row_gap: px(24),
                     align_items: AlignItems::Center,
                     justify_content: JustifyContent::SpaceBetween,
                     ..Default::default()
@@ -317,7 +336,6 @@ fn setup_pause_menu(mut commands: Commands, fonts: Res<Fonts>) {
 struct ScoreMenuTag;
 
 fn setup_score_menu(mut commands: Commands, fonts: Res<Fonts>, game_state: Res<GameState>) {
-    commands.spawn((ScoreMenuTag, Camera2d, DespawnOnExit(AppState::ScoreMenu)));
     commands.spawn((
         ScoreMenuTag,
         DespawnOnExit(AppState::ScoreMenu),
@@ -366,6 +384,7 @@ enum UiEvents {
     Play,
     Settings,
     MainMenu,
+    MainMenuLocal,
     Quit,
     SettingsChange(GameSettings),
     Pause,
@@ -386,9 +405,9 @@ struct OnSettingsChanged(GameSettings);
 fn on_settings_changed(
     event: On<OnSettingsChanged>,
     mut settings: ResMut<GameSettings>,
-    app_state: Option<Res<State<AppState>>>,
+    menu_state: Option<Res<State<MenuState>>>,
     playing_state: Option<Res<State<PlayingState>>>,
-    next_app_state: Option<ResMut<NextState<AppState>>>,
+    next_menu_state: Option<ResMut<NextState<MenuState>>>,
     next_playing_state: Option<ResMut<NextState<PlayingState>>>,
 ) {
     *settings = GameSettings {
@@ -399,11 +418,11 @@ fn on_settings_changed(
     };
 
     // Force UI to refresh
-    if let Some(app_state) = app_state
-        && app_state.get() == &AppState::SettingsMenu
-        && let Some(mut next_app_state) = next_app_state
+    if let Some(app_state) = menu_state
+        && app_state.get() == &MenuState::Settings
+        && let Some(mut next_app_state) = next_menu_state
     {
-        next_app_state.set(AppState::SettingsMenu);
+        next_app_state.set(MenuState::Settings);
     } else if let Some(playing_state) = playing_state
         && playing_state.get() == &PlayingState::SettingsMenu
         && let Some(mut next_playing_state) = next_playing_state
@@ -489,31 +508,6 @@ pub fn text(text: impl Into<String>, font: Handle<Font>, font_size: f32) -> impl
     )
 }
 
-// pub fn text_tagged(
-//     text: impl Into<String>,
-//     font: Handle<Font>,
-//     font_size: f32,
-//     tag: impl Component,
-// ) -> impl Bundle {
-//     (
-//         Node {
-//             padding: UiRect::all(px(10)),
-//             ..Default::default()
-//         },
-//         children![(
-//             tag,
-//             Text::new(text),
-//             TextFont {
-//                 font,
-//                 font_size,
-//                 ..default()
-//             },
-//             TextColor(Color::srgb(0.9, 0.9, 0.9)),
-//             TextShadow::default(),
-//         )],
-//     )
-// }
-
 fn padding(padding: UiRect) -> impl Bundle {
     Node {
         padding,
@@ -540,6 +534,7 @@ fn button_system(
         Changed<Interaction>,
     >,
     mut next_app_state: ResMut<NextState<AppState>>,
+    mut next_menu_state: ResMut<NextState<MenuState>>,
     mut next_playing_state: ResMut<NextState<PlayingState>>,
 ) {
     for (entity, interaction, mut color, mut border_color, mut button, event) in
@@ -556,7 +551,8 @@ fn button_system(
 
                 match event {
                     UiEvents::Play => next_app_state.set(AppState::Loading),
-                    UiEvents::Settings => next_app_state.set(AppState::SettingsMenu),
+                    UiEvents::Settings => next_menu_state.set(MenuState::Settings),
+                    UiEvents::MainMenuLocal => next_menu_state.set(MenuState::Main),
                     UiEvents::MainMenu => next_app_state.set(AppState::MainMenu),
                     UiEvents::Quit => commands.trigger(OnQuitClicked),
                     UiEvents::SettingsChange(game_settings) => {
