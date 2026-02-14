@@ -11,45 +11,42 @@ In order
 - [x] Gravity
   - [x] Check if the player is below ground and make them respawn
 - [x] Target model (mice atm)
-- [ ] Camera collisions
-- [x] Power ups
-- [ ] Better UI ( Icon for targets, Juice )
-- [ ] Lights definition per levels (From blender?)
 - [ ] Load transitions
+- [ ] Better UI
+  - [ ] Background
+  - [ ] Icons
+  - [ ] Juice
+    - [ ] Timer gets red when low on time (10 sec)
+    - [ ] Target counter pops when picking up a target
+- [ ] Better Menu
+  - [ ] Proper spacing
+  - [ ] Popup on hover
+- [x] Power ups
+- [ ] Lights definition per levels (From blender?)
+- [ ] Refactor Pickup and Target Hit with Events
 - [ ] SFX
+- [ ] Replace Powerup model
+- [ ] Finish level 1
+- [ ] Better Game over
+  - [ ] Laser
+  - [ ] Transition
+  - [ ] High scores?
+- [ ] Level 2 (Necromancer)
 - [ ] Music
+- [ ] Main menu back ground
+- [ ] Level 3 (Ducks)
+- [ ] Level 4 (??)
+- [ ] Jump
+- [ ] Better Target AI
+- [ ] Change rat tail to physics joints
+- [ ] Camera collisions / physics
 
 BUGS:
-- [ ] Something is wrong with how velocity is calculated / apply / interacts with controller
+- [x] Something is wrong with how velocity is calculated / apply / interacts with controller
 - [x] Sometime targets don't spawn
 - [x] Targets spawn "inside" collisions (make collision solid so the there is no navmeshes inside the collisions)
   - Check for stuck targets and have them respawn?
 - [x] Restarting a game after loosing make the game crash
   - The game needs a proper reset procedure
 - [ ] Sometimes targets don't move (for longer than their idle time)
-
-In no order
-
-- [x] Timer
-- [x] Timer end
-- [ ] Game over animations
-- [x] Score
-- [ ] Load rig
-- [x] UI
-- [ ] Jump ?
-- [x] Gravity
-- [ ] Camera-Ground interaction
-- [x] Targets "AI"
-- [ ] Powerups
-- [ ] Camera juice
-- [ ] Cat
-- [ ] Targets UVMap2
-- [x] Main Menu
-- [ ] Main Menu / Score Board env + lighting
-- [x] Score Board
-- [ ] Environment
-- [ ] Environment picker
-- [ ] Environment 2
-- [ ] Environment 3
-- [ ] Environment ...
-- [ ] Add Character3dBundle to Player ?
+- [ ] Powerup moves it's collider

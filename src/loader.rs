@@ -68,30 +68,20 @@ impl LevelShuffle {
 #[derive(Resource)]
 pub struct LevelAssetHandles {
     pub environment: Handle<Gltf>,
-    // pub collisions: Vec<Handle<Mesh>>,
     pub navmesh: Handle<Navmesh>,
     pub target: Handle<Scene>,
     pub god: Handle<GltfMesh>,
-    // pub material: Handle<StandardMaterial>,
     pub player: Handle<Scene>,
 }
 
 impl LevelAssetHandles {
     fn is_loaded(&self, asset_server: &AssetServer) -> bool {
-        let handles = vec![
+        let handles = [
             self.environment.clone().untyped(),
             self.navmesh.clone().untyped(),
             self.target.clone().untyped(),
             self.player.clone().untyped(),
         ];
-        // handles.append(
-        //     &mut self
-        //         .collisions
-        //         .iter()
-        //         .cloned()
-        //         .map(bevy::prelude::Handle::untyped)
-        //         .collect(),
-        // );
 
         handles.iter().all(|h| asset_server.is_loaded(h.id()))
     }
@@ -110,33 +100,15 @@ fn load_assets(
 
     info!("Loading level");
     let env_path = format!("{}_env.glb", level_def.prefix);
-    // let col_path = format!("{}_col.glb", level_def.prefix);
     let nav_path = format!("{}_nav.nav", level_def.prefix);
     let tar_path = format!("{}_tar.glb", level_def.prefix);
     let god_path = format!("{}_god.glb", level_def.prefix);
 
     commands.insert_resource(LevelAssetHandles {
-        // environment: asset_server.load(GltfAssetLabel::Scene(0).from_asset(env_path)),
         environment: asset_server.load(env_path),
-        // collisions: vec![
-        //     asset_server.load(
-        //         GltfAssetLabel::Primitive {
-        //             mesh: 0,
-        //             primitive: 0,
-        //         }
-        //         .from_asset(col_path),
-        //     ),
-        // ],
         navmesh: asset_server.load(nav_path),
         target: asset_server.load(GltfAssetLabel::Scene(0).from_asset(tar_path)),
         god: asset_server.load(GltfAssetLabel::Mesh(0).from_asset(god_path)),
-        // material: asset_server.load(
-        //     GltfAssetLabel::Material {
-        //         index: 0,
-        //         is_scale_inverted: false,
-        //     }
-        //     .from_asset("env.glb"),
-        // ),
         player: asset_server.load(GltfAssetLabel::Scene(0).from_asset("player.glb")),
     });
 }
