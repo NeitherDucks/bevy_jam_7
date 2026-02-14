@@ -4,7 +4,7 @@ use bevy::prelude::*;
 use crate::{
     game::{AppState, PlayingState},
     physics::MovementAcceleration,
-    player::{PLAYER_BOOST_SPEED, PLAYER_DEFAULT_SPEED},
+    player::PLAYER_DEFAULT_SPEED,
 };
 
 pub struct PowerupPlugin;
@@ -13,7 +13,7 @@ impl Plugin for PowerupPlugin {
     fn build(&self, app: &mut App) {
         app.add_systems(
             Update,
-            (tick_timers, animate, check_pickup).run_if(in_state(PlayingState::Playing)),
+            (tick_timers, animate).run_if(in_state(PlayingState::Playing)),
         );
     }
 }
@@ -56,34 +56,6 @@ impl PowerupBundle {
             name,
             despawn: DespawnOnExit(AppState::Playing),
             despawn_timer: DespawnTimer(Timer::from_seconds(10.0, TimerMode::Once)),
-        }
-    }
-}
-
-fn check_pickup(
-    mut message: MessageReader<CollisionStart>,
-    mut commands: Commands,
-    player: Query<&crate::player::Player>,
-    power_ups: Query<&Powerup>,
-    mut acceleration: Query<&mut MovementAcceleration>,
-) {
-    for (contact, _) in message.par_read() {
-        let (player, powerup) =
-            if player.contains(contact.collider1) && power_ups.contains(contact.collider2) {
-                (contact.collider1, contact.collider2)
-            } else if player.contains(contact.collider2) && power_ups.contains(contact.collider1) {
-                (contact.collider2, contact.collider1)
-            } else {
-                continue;
-            };
-
-        info!("Hit between player and powerup!");
-
-        commands.entity(powerup).despawn();
-        commands.entity(player).insert(PowerupTimer::default());
-
-        if let Ok(mut acceleration) = acceleration.get_mut(player) {
-            acceleration.target = PLAYER_BOOST_SPEED;
         }
     }
 }

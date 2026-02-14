@@ -1,14 +1,14 @@
 use std::time::Duration;
 
-use avian3d::prelude::CollisionStart;
 use bevy::{prelude::*, time::common_conditions::on_timer};
 
 use crate::{
     loader::{LevelAssetHandles, LevelDef},
     menus::Fonts,
-    player::Player,
-    powerup::PowerupBundle,
-    target::{Target, TargetBundle},
+    physics::{MovementAcceleration, PlayerHitPowerup, PlayerHitTarget},
+    player::{PLAYER_BOOST_SPEED, Player},
+    powerup::{PowerupBundle, PowerupTimer},
+    target::TargetBundle,
 };
 
 pub struct GamePlugin;
@@ -34,8 +34,6 @@ impl Plugin for GamePlugin {
             .add_systems(
                 Update,
                 (
-                    // check_for_hit,
-                    check_collision_with_target,
                     tick_timer,
                     update_ui.run_if(on_timer(Duration::from_millis(100))),
                     spawn_powerup.run_if(on_timer(Duration::from_secs(15))),
@@ -43,6 +41,8 @@ impl Plugin for GamePlugin {
                     .run_if(in_state(PlayingState::Playing)),
             )
             .add_systems(OnEnter(PlayingState::GameOver), game_over)
+            .add_observer(on_player_hit_powerup)
+            .add_observer(on_player_hit_target)
             // .add_observer(check_collision_with_target)
         ;
 
@@ -351,33 +351,31 @@ fn tick_timer(
     }
 }
 
-fn check_collision_with_target(
-    // contact: On<avian3d::prelude::CollisionStart>,
-    mut message: MessageReader<CollisionStart>,
+fn on_player_hit_powerup(
+    trigger: On<PlayerHitPowerup>,
     mut commands: Commands,
-    player: Query<&Player>,
-    targets: Query<&Target>,
+    mut player: Single<(Entity, &mut MovementAcceleration), With<Player>>,
+) {
+    commands.entity(trigger.0).despawn();
+
+    commands.entity(player.0).insert(PowerupTimer::default());
+    player.1.target = PLAYER_BOOST_SPEED;
+}
+
+fn on_player_hit_target(
+    trigger: On<PlayerHitTarget>,
+    mut commands: Commands,
     mut game_state: ResMut<GameState>,
     mut next_state: ResMut<NextState<AppState>>,
 ) {
-    for (contact, _) in message.par_read() {
-        let target = if player.contains(contact.collider1) && targets.contains(contact.collider2) {
-            contact.collider2
-        } else if player.contains(contact.collider2) && targets.contains(contact.collider1) {
-            contact.collider1
-        } else {
-            continue;
-        };
+    commands.entity(trigger.0).despawn();
 
-        commands.entity(target).despawn();
+    game_state.aquired_targets += 1;
+    game_state.score += 100;
 
-        game_state.aquired_targets += 1;
-        game_state.score += 100;
-
-        if game_state.aquired_targets == game_state.total_targets {
-            info!("Player won the round!");
-            next_state.set(AppState::Loading);
-        }
+    if game_state.aquired_targets == game_state.total_targets {
+        info!("Player won the round!");
+        next_state.set(AppState::Loading);
     }
 }
 

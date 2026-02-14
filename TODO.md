@@ -23,7 +23,7 @@ In order
   - [ ] Popup on hover
 - [x] Power ups
 - [ ] Lights definition per levels (From blender?)
-- [ ] Refactor Pickup and Target Hit with Events
+- [x] Refactor Pickup and Target Hit with Events
 - [ ] SFX
 - [ ] Replace Powerup model
 - [ ] Finish level 1

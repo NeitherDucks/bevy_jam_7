@@ -4,7 +4,7 @@ use avian3d::{
 };
 use bevy::prelude::*;
 
-use crate::{game::PlayingState, player::Player, target::Target};
+use crate::{game::PlayingState, player::Player, powerup::Powerup, target::Target};
 
 pub const DAMP_FACTOR: f32 = 0.3;
 
@@ -12,7 +12,7 @@ pub struct PhysicsPlugin;
 
 impl Plugin for PhysicsPlugin {
     fn build(&self, app: &mut bevy::app::App) {
-        app.add_plugins(avian3d::PhysicsPlugins::default());
+        app.add_plugins(PhysicsPlugins::default());
 
         #[cfg(feature = "dev")]
         app.add_plugins(avian3d::debug_render::PhysicsDebugPlugin);
@@ -26,11 +26,12 @@ impl Plugin for PhysicsPlugin {
                     .chain()
                     .run_if(in_state(PlayingState::Playing)),
             )
-            .add_systems(
-                FixedUpdate,
-                run_move_and_slide.run_if(in_state(PlayingState::Playing)),
-            );
+            .add_systems(FixedUpdate, run_move_and_slide.run_if(is_physics_enabled));
     }
+}
+
+fn is_physics_enabled(time: Res<Time<Physics>>) -> bool {
+    !time.is_paused()
 }
 
 fn enable_physics(mut time: ResMut<Time<Physics>>) {
@@ -41,7 +42,14 @@ fn disable_physics(mut time: ResMut<Time<Physics>>) {
     time.pause();
 }
 
+#[derive(Event)]
+pub struct PlayerHitPowerup(pub Entity);
+
+#[derive(Event)]
+pub struct PlayerHitTarget(pub Entity);
+
 fn run_move_and_slide(
+    mut commands: Commands,
     query: Query<
         (
             Entity,
@@ -50,13 +58,16 @@ fn run_move_and_slide(
             &MovementDampingFactor,
             &Collider,
             Has<Grounded>,
+            Has<Player>,
         ),
         With<CustomPositionIntegration>,
     >,
+    powerup: Query<Entity, With<Powerup>>,
+    targets: Query<Entity, With<Target>>,
     move_and_slide: MoveAndSlide,
     time: Res<Time<Fixed>>,
 ) {
-    for (entity, mut transform, mut lin_vel, damping, collider, is_grounded) in query {
+    for (entity, mut transform, mut lin_vel, damping, collider, is_grounded, is_player) in query {
         let mut velocity = lin_vel.0;
 
         if is_grounded {
@@ -80,7 +91,19 @@ fn run_move_and_slide(
                 ..Default::default()
             },
             &SpatialQueryFilter::from_excluded_entities([entity]),
-            |_| MoveAndSlideHitResponse::Accept,
+            |hit| {
+                if is_player {
+                    if targets.contains(hit.entity) {
+                        commands.trigger(PlayerHitTarget(hit.entity));
+                    }
+
+                    if powerup.contains(hit.entity) {
+                        commands.trigger(PlayerHitPowerup(hit.entity));
+                    }
+                }
+
+                MoveAndSlideHitResponse::Accept
+            },
         );
 
         transform.translation = position.f32();
