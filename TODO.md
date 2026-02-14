@@ -13,7 +13,7 @@ In order
 - [x] Target model (mice atm)
 - [x] Load transitions
 - [ ] Better UI
-  - [ ] Background
+  - [x] Background
   - [ ] Icons
   - [ ] Juice
     - [ ] Timer gets red when low on time (10 sec)

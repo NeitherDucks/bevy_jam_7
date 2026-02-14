@@ -256,7 +256,6 @@ fn setup_ui(mut commands: Commands, fonts: Res<Fonts>) {
         DespawnOnExit(AppState::Playing),
         Node {
             width: percent(100),
-            height: percent(100),
             ..Default::default()
         },
         children![
@@ -269,10 +268,13 @@ fn setup_ui(mut commands: Commands, fonts: Res<Fonts>) {
                 },
                 children![(
                     Node {
-                        margin: UiRect::bottom(px(100)),
                         padding: UiRect::all(px(10)),
+                        width: px(150),
+                        border_radius: BorderRadius::all(px(50)),
+                        justify_content: JustifyContent::Center,
                         ..Default::default()
                     },
+                    BackgroundColor(Color::linear_rgba(0.0, 0.0, 0.0, 0.8)),
                     children![(
                         TargetsUi,
                         Text::new(""),
@@ -293,7 +295,6 @@ fn setup_ui(mut commands: Commands, fonts: Res<Fonts>) {
         DespawnOnExit(AppState::Playing),
         Node {
             width: percent(100),
-            height: percent(100),
             ..Default::default()
         },
         children![
@@ -306,10 +307,13 @@ fn setup_ui(mut commands: Commands, fonts: Res<Fonts>) {
                 },
                 children![(
                     Node {
-                        margin: UiRect::bottom(px(100)),
                         padding: UiRect::all(px(10)),
+                        width: px(200),
+                        border_radius: BorderRadius::all(px(50)),
+                        justify_content: JustifyContent::Center,
                         ..Default::default()
                     },
+                    BackgroundColor(Color::linear_rgba(0.0, 0.0, 0.0, 0.8)),
                     children![(
                         TimerUi,
                         Text::new(""),
