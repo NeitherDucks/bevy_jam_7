@@ -33,19 +33,19 @@ In order
   - [ ] High scores?
 - [ ] Level 2 (Necromancer)
 - [ ] Music
-- [ ] Main menu back ground
+- [ ] Main menu background
 - [ ] Level 3 (Ducks)
 - [ ] Level 4 (??)
-- [ ] Jump
+- [x] Jump
 - [ ] Better Target AI
-- [ ] Change rat tail to physics joints
-- [ ] Camera collisions / physics
 - [ ] Adjust shadow settings
   - CascadeShadowConfigBuilder {
               first_cascade_far_bound: 200.0,
               maximum_distance: 400.0,
               ..default()
           }
+- [ ] Change rat tail to physics joints
+- [ ] Camera collisions / physics
 
 BUGS:
 - [x] Something is wrong with how velocity is calculated / apply / interacts with controller
@@ -56,6 +56,7 @@ BUGS:
   - The game needs a proper reset procedure
 - [ ] Sometimes targets don't move (for longer than their idle time)
 - [ ] Powerup moves it's collider
+- [ ] Verlet chain stop updating when player is not moving
 
 REFACTOR:
 - [ ] On<SceneInstanceReady>

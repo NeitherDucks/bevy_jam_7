@@ -17,6 +17,7 @@ use crate::{
 pub const PLAYER_DEFAULT_SPEED: f32 = 10.0;
 pub const PLAYER_BOOST_SPEED: f32 = PLAYER_DEFAULT_SPEED * 2.0;
 pub const PLAYER_SPEED_FACTOR: f32 = 1.0 / PLAYER_DEFAULT_SPEED;
+pub const JUMP_IMPULSE: f32 = 5.0;
 
 pub struct PlayerPlugin;
 
@@ -33,6 +34,7 @@ impl Plugin for PlayerPlugin {
             )
             .add_observer(apply_movement)
             .add_observer(apply_rotation)
+            .add_observer(apply_jump)
             .add_observer(apply_toggle_menu)
             .add_observer(apply_toggle_cursor);
     }
@@ -58,11 +60,11 @@ fn setup(mut commands: Commands, handles: Res<PermanentAssetHandles>) {
         PlayerHitEntities(HashSet::new()),
         CharacterController,
         (
-            RigidBody::Dynamic,
+            RigidBody::Kinematic,
             collider,
             ShapeCaster::new(caster_shape, Vec3::ZERO, Quat::IDENTITY, Dir3::NEG_Y),
             CollisionEventsEnabled,
-            // CustomPositionIntegration,
+            CustomPositionIntegration,
             MovementAcceleration::new(PLAYER_DEFAULT_SPEED),
             MovementDampingFactor(DAMP_FACTOR),
             LockedAxes::new().lock_rotation_x().lock_rotation_z(),
@@ -215,14 +217,15 @@ fn apply_movement(
 ) {
     let (mut lin_vel, mut max_acceleration, is_grounded) = player.into_inner();
 
-    if !is_grounded {
-        return;
-    }
-
     // smooth speed change
     max_acceleration.current = max_acceleration
         .current
         .lerp(max_acceleration.target, time.delta_secs());
+
+    // If not on the ground stop processing inputs
+    if !is_grounded {
+        return;
+    }
 
     let mut velocity = movement.value.extend(0.0).xzy().normalize_or_zero()
         * Vec3::new(-1.0, 1.0, 1.0)
@@ -256,9 +259,16 @@ fn apply_rotation(
     anchor_x.rotation = Quat::from_euler(EulerRot::YXZ, 0.0, pitch, 0.0);
 }
 
-// fn apply_jump(jump: On<Fire<Jump>>) {
-//     // TODO: Jump ??
-// }
+fn apply_jump(
+    _: On<Fire<Jump>>,
+    player: Single<(&mut LinearVelocity, Has<Grounded>), With<Player>>,
+) {
+    let (mut velocity, is_grounded) = player.into_inner();
+
+    if is_grounded {
+        velocity.y += JUMP_IMPULSE;
+    }
+}
 
 fn apply_toggle_menu(
     _toggle: On<Start<ToggleMenu>>,

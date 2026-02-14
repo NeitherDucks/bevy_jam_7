@@ -188,7 +188,6 @@ fn orient_to_vel(
 //      - Spawn entity per joint
 //      - Add SphericalJoint constraint
 //      - On update, apply joint entity transform to join (in local space)
-// FIX: Compute tail in 2d then convert back to 3d to avoid bone twist, if any
 fn update_tail(
     mut query: Query<(
         &BoneChain,
@@ -244,9 +243,14 @@ fn update_tail(
         // Integrate motion
         for i in 1..tail_state.points.len() {
             let p = &mut tail_state.points[i];
+            // FIXME: Since the velocity is only difference between the previous frame and the current
+            //        if the player stops, after a frame the velocity drops to 0
+            //        we could keep a portion of it, this'll add overshoot
+            //        but it'll also means the tail might fall into the ground
+            //        since there is no collision check
             let velocity = p.current - p.previous;
             p.previous = p.current;
-            p.current += velocity * time.delta_secs() * 3.0;
+            p.current += velocity * time.delta_secs() * 5.0;
         }
 
         let anchor_translation = anchor.compute_transform().translation;

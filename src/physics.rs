@@ -55,9 +55,7 @@ fn run_move_and_slide(
             Entity,
             &mut Transform,
             &mut LinearVelocity,
-            &MovementDampingFactor,
             &Collider,
-            Has<Grounded>,
             Has<Player>,
         ),
         With<CustomPositionIntegration>,
@@ -67,12 +65,8 @@ fn run_move_and_slide(
     move_and_slide: MoveAndSlide,
     time: Res<Time<Fixed>>,
 ) {
-    for (entity, mut transform, mut lin_vel, damping, collider, is_grounded, is_player) in query {
+    for (entity, mut transform, mut lin_vel, collider, is_player) in query {
         let mut velocity = lin_vel.0;
-
-        if is_grounded {
-            velocity = velocity.move_towards(Vec3::ZERO, damping.0 * time.delta_secs());
-        }
 
         velocity.y += -9.8 * 5.0 * time.delta_secs();
 
@@ -139,9 +133,6 @@ impl MovementAcceleration {
 #[derive(Component)]
 pub struct MovementDampingFactor(pub Scalar);
 
-// #[derive(Component)]
-// struct JumpImpulse(pub Scalar);
-
 #[derive(Component)]
 pub struct MaxSlopeAngle(pub Scalar);
 
@@ -154,9 +145,11 @@ fn update_grounded(
     >,
 ) {
     for (entity, hits, rotation, max_slope_angle) in &mut query {
-        // The character is grounded if the shape caster has a hit with a normal
-        // that isn't too steep.
         let is_grounded = hits.iter().any(|hit| {
+            if hit.distance > 0.5 {
+                return false;
+            }
+
             if let Some(angle) = max_slope_angle {
                 (rotation * -hit.normal2).angle_between(Vec3::Y).abs() <= angle.0
             } else {
@@ -173,9 +166,10 @@ fn update_grounded(
 }
 
 /// Slows down movement in the XZ plane.
-fn apply_movement_damping(mut query: Query<(&MovementDampingFactor, &mut LinearVelocity)>) {
-    for (damping_factor, mut linear_velocity) in &mut query {
-        // We could use `LinearDamping`, but we don't want to dampen movement along the Y axis
+fn apply_movement_damping(
+    mut query: Query<(&MovementDampingFactor, &mut LinearVelocity, &Grounded)>,
+) {
+    for (damping_factor, mut linear_velocity, _) in &mut query {
         linear_velocity.x *= damping_factor.0;
         linear_velocity.z *= damping_factor.0;
     }
