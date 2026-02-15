@@ -1,15 +1,14 @@
 use std::time::Duration;
 
 use bevy::{prelude::*, time::common_conditions::on_timer};
-use bevy_enhanced_input::prelude::Fire;
 use bevy_seedling::prelude::*;
 
 use crate::{
     game::{GameSettings, PlayingState},
     loader::{LevelAssetHandles, PermanentAssetHandles, PreLoadAssets},
     menus::ButtonClicked,
-    physics::{Grounded, PlayerHitPowerup, PlayerHitTarget},
-    player::{Jump, PlayerJump},
+    physics::{PlayerHitPowerup, PlayerHitTarget},
+    player::PlayerJump,
 };
 
 pub struct AudioPlugin;
