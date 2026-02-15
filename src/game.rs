@@ -594,9 +594,9 @@ pub fn get_random_position_on_navmesh<'a>(
         new_pos,
         &bevy_landmass::PointSampleDistance3d {
             horizontal_distance: radius * 0.5,
-            distance_above: 1.0,
-            distance_below: 1.0,
-            vertical_preference_ratio: 0.0,
+            distance_above: 5.0,
+            distance_below: 5.0,
+            vertical_preference_ratio: -1.0,
             animation_link_max_vertical_distance: 5.0,
         },
     )
