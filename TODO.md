@@ -16,9 +16,9 @@ In order
 - [ ] Better UI
   - [x] Background
   - [ ] Icons
-  - [ ] Juice
+  - [x] Juice
     - [x] Timer gets red when low on time (10 sec)
-    - [ ] Target counter pops when picking up a target
+    - [x] Target counter pops when picking up a target
   - [ ] Goal message with fade off
 - [ ] Better Menu
   - [x] Proper spacing

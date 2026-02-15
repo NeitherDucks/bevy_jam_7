@@ -1,5 +1,6 @@
 use avian3d::prelude::LinearVelocity;
 use bevy::prelude::*;
+use bevy_tweening::TweeningPlugin;
 
 use crate::{
     game::{AppState, PlayingState, SetupState},
@@ -12,7 +13,8 @@ pub struct AnimPlugin;
 
 impl Plugin for AnimPlugin {
     fn build(&self, app: &mut App) {
-        app.register_type::<BoneChain>()
+        app.add_plugins(TweeningPlugin)
+            .register_type::<BoneChain>()
             .add_systems(OnEnter(SetupState::Animation), setup_bone_chain)
             .add_systems(
                 Update,

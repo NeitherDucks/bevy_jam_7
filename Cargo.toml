@@ -29,6 +29,7 @@ avian_rerecast = "0.5.0-rc.1"
 bevy_landmass = "0.11.0"
 landmass_rerecast = "0.2.0"
 
+bevy_tweening = "0.15.0"
 bevy_seedling = "0.7.0"
 bevy_framepace = "0.21.0"
 
