@@ -18,7 +18,7 @@ use landmass_rerecast::{Island3dBundle, LandmassRerecastPlugin, NavMeshHandle3d}
 
 use crate::{
     game::{AppState, SetupState},
-    loader::LevelAssetHandles,
+    loader::{LevelAssetHandles, LevelDef},
 };
 
 pub struct EnvironmentPlugin;
@@ -51,6 +51,7 @@ fn setup(
     gltf_meshes: Res<Assets<GltfMesh>>,
     meshes: Res<Assets<Mesh>>,
     handles: Res<LevelAssetHandles>,
+    level_def: Res<LevelDef>,
 ) {
     info!("Spawning environment");
 
@@ -135,25 +136,17 @@ fn setup(
 
     // Lights
     info!("Spawning lights");
-    commands.insert_resource(GlobalAmbientLight {
-        color: Color::WHITE,
-        brightness: 1200.0,
-        ..Default::default()
-    });
+    commands.insert_resource(level_def.ambient_light.clone());
 
     commands.spawn((
-        DirectionalLight {
-            illuminance: 28000.0,
-            shadows_enabled: true,
-            ..Default::default()
-        },
+        level_def.directional_light,
+        level_def.directional_light_transform,
         CascadeShadowConfigBuilder {
             first_cascade_far_bound: 200.0,
             maximum_distance: 400.0,
             ..default()
         }
         .build(),
-        Transform::from_xyz(0.0, 10.0, 5.0).looking_at(Vec3::ZERO, Vec3::Y),
         DespawnOnExit(AppState::Playing),
     ));
 

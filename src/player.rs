@@ -30,7 +30,7 @@ impl Plugin for PlayerPlugin {
             .add_systems(OnExit(PlayingState::Playing), disable_controls)
             .add_systems(
                 Update,
-                (update_camera_pos).run_if(in_state(PlayingState::Playing)),
+                (update_camera_pos).run_if(in_state(AppState::Playing)),
             )
             .add_observer(apply_movement)
             .add_observer(apply_rotation)

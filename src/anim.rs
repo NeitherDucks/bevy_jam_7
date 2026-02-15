@@ -73,6 +73,9 @@ fn on_play_animation(
 // ------------------------------------------------------------------------------------------------------
 
 #[derive(Reflect, Component)]
+struct MainBone(Entity, Quat);
+
+#[derive(Reflect, Component)]
 struct BoneChain([Entity; 9]);
 
 fn setup_bone_chain(
@@ -88,7 +91,7 @@ fn setup_bone_chain(
             continue;
         }
 
-        info!("\tFound tail bone");
+        info!("\tFound spine bone");
 
         // Dig up the bone chain and store them
         let mut bones = [entity; 9];
@@ -151,9 +154,16 @@ fn setup_bone_chain(
             });
         }
 
+        let main_rotation = global_transforms
+            .get(entity)
+            .unwrap()
+            .compute_transform()
+            .rotation;
+
         // Store the bone chain
         commands
             .entity(parent)
+            .insert(MainBone(entity, main_rotation))
             .insert(BoneChain(bones))
             .insert(VerletTailState { points });
     }
@@ -167,10 +177,12 @@ fn orient_to_vel(
         &LinearVelocity,
         &MovementAcceleration,
         &TargetBehavior,
+        &MainBone,
     )>,
+    mut bones: Query<&mut Transform, Without<MainBone>>,
     time: Res<Time>,
 ) {
-    for (mut transform, lin_vel, speed, behavior) in &mut query {
+    for (mut transform, lin_vel, speed, behavior, main_bone) in &mut query {
         if lin_vel.0.length_squared() < 1.0 || behavior != &TargetBehavior::Mice {
             continue;
         }
@@ -179,10 +191,25 @@ fn orient_to_vel(
 
         let aim = transform.rotation.rotate_towards(
             Quat::from_rotation_arc(Vec3::Z, vel),
-            520.0f32.to_radians() * time.delta_secs() * speed.current * 0.1,
+            520.0f32.to_radians() * time.delta_secs() * speed.current * PLAYER_SPEED_FACTOR,
         );
 
         transform.rotation = aim;
+
+        if let Ok(mut head_bone) = bones.get_mut(main_bone.0) {
+            let rot = head_bone.rotation.rotate_towards(
+                // in world space
+                Quat::from_rotation_arc(Vec3::Z, lin_vel.0.normalize_or_zero())
+                // to body space
+                    * transform.rotation.inverse()
+                    // to bone space
+                    * main_bone.1,
+                360f32.to_radians() * time.delta_secs() * speed.current * PLAYER_SPEED_FACTOR,
+            );
+            // only keep X rotation
+            let (x, _, _) = rot.to_euler(EulerRot::XYZ);
+            head_bone.rotation = Quat::from_euler(EulerRot::XYZ, x, 0.0, 0.0);
+        }
     }
 }
 

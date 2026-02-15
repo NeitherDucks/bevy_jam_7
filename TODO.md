@@ -12,7 +12,7 @@ In order
   - [x] Check if the player is below ground and make them respawn
 - [x] Target model (mice atm)
 - [x] Load transitions
-- [ ] Tweak transition animation
+- [x] Tweak transition animation
 - [ ] Better UI
   - [x] Background
   - [ ] Icons
@@ -25,7 +25,7 @@ In order
   - [x] Proper spacing
   - [ ] Popup on hover
 - [x] Power ups
-- [ ] Lights definition per levels (From blender?)
+- [x] Lights definition per levels
 - [x] Refactor Pickup and Target Hit with Events
 - [ ] SFX
   - [x] Target pickup
@@ -53,9 +53,9 @@ In order
 - [ ] Camera collisions / physics
 
 FIXES:
-- [ ] Normals on cheese
-- [ ] Player head follows Y velocity
-- [ ] Better velocity alignment smoothing
+- [x] Normals on cheese
+- [x] Player head follows Y velocity
+- [x] Camera jump on load
 
 BUGS:
 - [x] Something is wrong with how velocity is calculated / apply / interacts with controller

@@ -36,13 +36,16 @@ impl Plugin for LoaderPlugin {
     }
 }
 
-#[derive(Resource, Clone, Copy)]
+#[derive(Resource, Clone)]
 pub struct LevelDef {
     pub prefix: &'static str,
     pub goal: &'static str,
     pub target_behavior: TargetBehavior,
     pub god_behavior: GodBehavior,
     pub musics: [&'static str; 3],
+    pub ambient_light: GlobalAmbientLight,
+    pub directional_light: DirectionalLight,
+    pub directional_light_transform: Transform,
 }
 
 impl LevelDef {
@@ -56,6 +59,22 @@ impl LevelDef {
             "nature_sketch-remaxim.ogg",
             "the_secret_within_the_silent_woods-hitctrl.ogg",
         ],
+        ambient_light: GlobalAmbientLight {
+            color: Color::WHITE,
+            brightness: 1200.0,
+            affects_lightmapped_meshes: true,
+        },
+        directional_light: DirectionalLight {
+            color: Color::WHITE,
+            illuminance: light_consts::lux::AMBIENT_DAYLIGHT,
+            shadows_enabled: true,
+            shadow_depth_bias: DirectionalLight::DEFAULT_SHADOW_DEPTH_BIAS,
+            shadow_normal_bias: DirectionalLight::DEFAULT_SHADOW_NORMAL_BIAS,
+            affects_lightmapped_mesh_diffuse: true,
+        },
+        directional_light_transform: Transform::from_rotation(Quat::from_xyzw(
+            -0.5257311, -0.0, -0.0, 0.85065085,
+        )),
     };
 
     // const SKELETON: LevelDef = LevelDef {
@@ -191,7 +210,7 @@ fn load_assets(
     info!("Picking level");
     let level_def = level_shuffle.next(&mut rng);
 
-    commands.insert_resource(level_def);
+    commands.insert_resource(level_def.clone());
 
     info!("Loading level");
     let env_path = format!("levels/{}/environment.glb", level_def.prefix);

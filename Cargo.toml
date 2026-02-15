@@ -53,6 +53,7 @@ too_many_arguments = "allow"
 type_complexity = "allow"
 needless_pass_by_value = "allow"
 return_self_not_must_use = "allow"
+unreadable_literal = "allow"
 
 [features]
 default = [
