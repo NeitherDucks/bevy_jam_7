@@ -46,6 +46,7 @@ impl Plugin for GamePlugin {
                 entered: PlayingState::Playing,
             }, fade_goal_text)
             .add_systems(OnEnter(PlayingState::GameOver), game_over)
+            .add_systems(PostUpdate, despawn_later)
             .add_observer(on_player_hit_powerup)
             .add_observer(on_player_hit_target)
             // .add_observer(check_collision_with_target)
@@ -62,6 +63,15 @@ impl Plugin for GamePlugin {
                 bevy::dev_tools::states::log_transitions::<PlayingState>,
             ),
         );
+    }
+}
+
+#[derive(Component)]
+pub struct DespawnLaterPlease;
+
+fn despawn_later(mut commands: Commands, query: Query<Entity, With<DespawnLaterPlease>>) {
+    for entity in &query {
+        commands.entity(entity).despawn();
     }
 }
 
@@ -500,7 +510,7 @@ fn on_player_hit_powerup(
     mut commands: Commands,
     mut player: Single<(Entity, &mut MovementAcceleration), With<Player>>,
 ) {
-    commands.entity(trigger.0).despawn();
+    commands.entity(trigger.0).insert(DespawnLaterPlease);
 
     commands.entity(player.0).insert(PowerupTimer::default());
     player.1.target = PLAYER_BOOST_SPEED;
@@ -512,7 +522,7 @@ fn on_player_hit_target(
     mut game_state: ResMut<GameState>,
     mut next_state: ResMut<NextState<AppState>>,
 ) {
-    commands.entity(trigger.0).despawn();
+    commands.entity(trigger.0).insert(DespawnLaterPlease);
 
     game_state.aquired_targets += 1;
     game_state.score += 100;

@@ -26,7 +26,8 @@ impl Plugin for PhysicsPlugin {
                     .chain()
                     .run_if(in_state(PlayingState::Playing)),
             )
-            .add_systems(FixedUpdate, run_move_and_slide.run_if(is_physics_enabled));
+            .add_systems(FixedUpdate, run_move_and_slide.run_if(is_physics_enabled))
+            .add_observer(check_hit_powerup);
     }
 }
 
@@ -48,6 +49,22 @@ pub struct PlayerHitPowerup(pub Entity);
 #[derive(Event)]
 pub struct PlayerHitTarget(pub Entity);
 
+fn check_hit_powerup(
+    trigger: On<CollisionStart>,
+    mut commands: Commands,
+    player: Single<Entity, With<Player>>,
+    powerups: Query<Entity, With<Powerup>>,
+) {
+    // Only the player and power ups have they CollisionEventsEnabled
+
+    // Make sure we don't delete the wrong entity
+    if trigger.collider1 == *player && powerups.contains(trigger.collider2) {
+        commands.trigger(PlayerHitPowerup(trigger.collider2));
+    } else if trigger.collider2 == *player && powerups.contains(trigger.collider1) {
+        commands.trigger(PlayerHitPowerup(trigger.collider1));
+    }
+}
+
 fn run_move_and_slide(
     mut commands: Commands,
     query: Query<
@@ -60,7 +77,6 @@ fn run_move_and_slide(
         ),
         With<CustomPositionIntegration>,
     >,
-    powerup: Query<Entity, With<Powerup>>,
     targets: Query<Entity, With<Target>>,
     move_and_slide: MoveAndSlide,
     time: Res<Time<Fixed>>,
@@ -86,14 +102,8 @@ fn run_move_and_slide(
             },
             &SpatialQueryFilter::from_excluded_entities([entity]),
             |hit| {
-                if is_player {
-                    if targets.contains(hit.entity) {
-                        commands.trigger(PlayerHitTarget(hit.entity));
-                    }
-
-                    if powerup.contains(hit.entity) {
-                        commands.trigger(PlayerHitPowerup(hit.entity));
-                    }
+                if is_player && targets.contains(hit.entity) {
+                    commands.trigger(PlayerHitTarget(hit.entity));
                 }
 
                 MoveAndSlideHitResponse::Accept
