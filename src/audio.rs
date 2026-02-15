@@ -39,7 +39,7 @@ fn queue_music(
     settings: Res<GameSettings>,
 ) {
     if music_player.is_empty() {
-        info!("Starting new music");
+        // info!("Starting new music");
         commands.spawn((
             MusicPlayer,
             SamplePlayer::new(level_handles.musics.next(&mut rng))

@@ -53,7 +53,7 @@ fn setup(
     handles: Res<LevelAssetHandles>,
     level_def: Res<LevelDef>,
 ) {
-    info!("Spawning environment");
+    // info!("Spawning environment");
 
     commands.spawn((
         InheritedVisibility::HIDDEN,
@@ -135,7 +135,7 @@ fn setup(
         });
 
     // Lights
-    info!("Spawning lights");
+    // info!("Spawning lights");
     commands.insert_resource(level_def.ambient_light.clone());
 
     commands.spawn((
@@ -150,7 +150,7 @@ fn setup(
         DespawnOnExit(AppState::Playing),
     ));
 
-    info!("Spawning navmesh");
+    // info!("Spawning navmesh");
     let archipelago = commands
         .spawn((
             Name::new("Navmesh archipelago"),
@@ -189,7 +189,7 @@ fn wait_for_navmesh(
         )
         .is_ok()
     {
-        info!("Navmesh is available");
+        // info!("Navmesh is available");
         next_state.set(SetupState::Entities);
     }
 }

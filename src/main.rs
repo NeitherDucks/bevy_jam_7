@@ -10,6 +10,7 @@ pub mod player;
 pub mod powerup;
 pub mod shuffle;
 pub mod target;
+pub mod transition;
 
 use bevy::{asset::AssetMetaCheck, prelude::*};
 
@@ -24,6 +25,7 @@ fn main() {
         bevy_rand::prelude::EntropyPlugin::<bevy_prng::ChaCha20Rng>::default(),
         audio::AudioPlugin,
         loader::LoaderPlugin,
+        transition::TransitionPlugin,
         physics::PhysicsPlugin,
         env::EnvironmentPlugin,
         player::PlayerPlugin,

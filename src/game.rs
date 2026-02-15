@@ -9,6 +9,7 @@ use crate::{
     player::{PLAYER_BOOST_SPEED, Player},
     powerup::{PowerupBundle, PowerupTimer},
     target::TargetBundle,
+    transition::{ContinueTransition, StartTransition, TransitionEnded, TransitionReachedMiddle},
 };
 
 pub struct GamePlugin;
@@ -30,6 +31,7 @@ impl Plugin for GamePlugin {
                 },
                 reset_game,
             )
+            .add_systems(OnEnter(LoadingState::TransitionIn), start_load_transition)
             .add_systems(OnEnter(SetupState::Entities), (init_game, setup_ui))
             .add_systems(
                 Update,
@@ -44,10 +46,13 @@ impl Plugin for GamePlugin {
                 exited: PlayingState::Starting,
                 entered: PlayingState::Playing,
             }, fade_goal_text)
+            .add_systems(OnEnter(PlayingState::Starting), continue_load_transition)
             .add_systems(OnEnter(PlayingState::GameOver), game_over)
             .add_systems(PostUpdate, despawn_later)
             .add_observer(on_player_hit_powerup)
             .add_observer(on_player_hit_target)
+            .add_observer(transition_in_finished)
+            .add_observer(transition_out_finished)
             // .add_observer(check_collision_with_target)
         ;
 
@@ -97,7 +102,7 @@ pub enum MenuState {
 pub enum LoadingState {
     #[default]
     TransitionIn,
-    Waiting,
+    Loading,
     TransitionOut,
 }
 
@@ -206,7 +211,7 @@ impl GameState {
 }
 
 fn reset_game(mut commands: Commands) {
-    info!("Resetting game");
+    // info!("Resetting game");
     commands.remove_resource::<GameState>();
     commands.init_resource::<GameState>();
 }
@@ -220,13 +225,13 @@ fn init_game(
     handles: Res<LevelAssetHandles>,
     mut next_state: ResMut<NextState<SetupState>>,
 ) {
-    info!("Picking difficulty");
+    // info!("Picking difficulty");
     state.next_difficulty();
 
     // Spawn targets
-    info!("Spawning targets:");
+    // info!("Spawning targets:");
     for i in 0..state.total_targets {
-        info!("\t Target {}", i);
+        // info!("\t Target {}", i);
         let mut iter = 0;
         let mut pos = Err(bevy_landmass::SamplePointError::OutOfRange);
         while pos.is_err() && iter < 100 {
@@ -242,7 +247,7 @@ fn init_game(
             }
         };
 
-        info!("\t Target {} spawned!", i);
+        // info!("\t Target {} spawned!", i);
         commands.spawn((
             TargetBundle::new(
                 handles.target.clone(),
@@ -256,6 +261,34 @@ fn init_game(
 
     next_state.set(SetupState::Animation);
 }
+
+// -----------------------------------------------------------------------
+
+fn start_load_transition(mut commands: Commands) {
+    commands.trigger(StartTransition);
+}
+
+fn continue_load_transition(mut commands: Commands) {
+    commands.trigger(ContinueTransition);
+}
+
+fn transition_in_finished(
+    _: On<TransitionReachedMiddle>,
+    mut next_state: ResMut<NextState<LoadingState>>,
+) {
+    // info!("Transition reached middle");
+    next_state.set(LoadingState::Loading);
+}
+
+fn transition_out_finished(
+    _: On<TransitionEnded>,
+    mut next_state: ResMut<NextState<PlayingState>>,
+) {
+    // info!("Transition out finished");
+    next_state.set(PlayingState::Playing);
+}
+
+// -----------------------------------------------------------------------
 
 #[derive(Component)]
 struct TimerUi;
@@ -308,7 +341,7 @@ impl Lens<TextShadow> for UiTextShadowColorLens {
 
 #[allow(clippy::too_many_lines)]
 fn setup_ui(mut commands: Commands, fonts: Res<Fonts>, level_def: Res<LevelDef>) {
-    info!("Setting up UI");
+    // info!("Setting up UI");
     // Targets
     commands.spawn((
         GlobalZIndex(-1),
@@ -537,13 +570,13 @@ fn on_player_hit_target(
     game_state.score += 100;
 
     if game_state.aquired_targets == game_state.total_targets {
-        info!("Player won the round!");
+        // info!("Player won the round!");
         next_state.set(AppState::Loading);
     }
 }
 
 fn game_over(mut next_state: ResMut<NextState<AppState>>) {
-    info!("Game over!");
+    // info!("Game over!");
     next_state.set(AppState::ScoreMenu);
 }
 
@@ -569,7 +602,7 @@ fn spawn_powerup(
         }
     };
 
-    info!("\t Powerup spawned!");
+    // info!("\t Powerup spawned!");
     commands.spawn(PowerupBundle::new(
         SceneRoot(permanent_handles.cheese.clone()),
         pos.point(),

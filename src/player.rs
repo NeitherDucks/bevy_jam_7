@@ -41,7 +41,7 @@ impl Plugin for PlayerPlugin {
 }
 
 fn setup(mut commands: Commands, handles: Res<PermanentAssetHandles>) {
-    info!("Spawning Player");
+    // info!("Spawning Player");
 
     let collider = Collider::capsule_endpoints(
         0.35,
@@ -269,7 +269,7 @@ fn apply_jump(
     let (mut velocity, is_grounded) = player.into_inner();
 
     if is_grounded {
-        info!("Player jumped");
+        // info!("Player jumped");
         velocity.y += JUMP_IMPULSE;
         commands.trigger(PlayerJump);
     }

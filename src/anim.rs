@@ -91,7 +91,7 @@ fn setup_bone_chain(
             continue;
         }
 
-        info!("\tFound spine bone");
+        // info!("\tFound spine bone");
 
         // Dig up the bone chain and store them
         let mut bones = [entity; 9];
@@ -204,7 +204,7 @@ fn orient_to_vel(
                     * transform.rotation.inverse()
                     // to bone space
                     * main_bone.1,
-                360f32.to_radians() * time.delta_secs() * speed.current * PLAYER_SPEED_FACTOR,
+                720.0f32.to_radians() * time.delta_secs() * speed.current * PLAYER_SPEED_FACTOR,
             );
             // only keep X rotation
             let (x, _, _) = rot.to_euler(EulerRot::XYZ);
@@ -272,7 +272,7 @@ fn update_tail(
         // Integrate motion
         for i in 1..tail_state.points.len() {
             let p = &mut tail_state.points[i];
-            // FIXME: Since the velocity is only difference between the previous frame and the current
+            // FIXME: Since the velocity is only different between the previous frame and the current
             //        if the player stops, after a frame the velocity drops to 0
             //        we could keep a portion of it, this'll add overshoot
             //        but it'll also means the tail might fall into the ground

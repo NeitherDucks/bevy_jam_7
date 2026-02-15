@@ -17,7 +17,7 @@ impl Plugin for MenusPlugin {
             .add_systems(Startup, setup)
             .add_systems(OnEnter(MenuState::Main), setup_main_menu)
             .add_systems(OnEnter(MenuState::Settings), cleanup::<MainMenuTag>)
-            .add_systems(OnEnter(LoadingState::Waiting), cleanup::<MainMenuTag>)
+            .add_systems(OnEnter(LoadingState::Loading), cleanup::<MainMenuTag>)
             .add_systems(OnEnter(MenuState::Settings), setup_settings_menu)
             .add_systems(OnExit(MenuState::Settings), cleanup::<SettingsMenuTag>)
             .add_systems(
