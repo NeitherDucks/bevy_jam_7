@@ -12,12 +12,14 @@ In order
   - [x] Check if the player is below ground and make them respawn
 - [x] Target model (mice atm)
 - [x] Load transitions
+- [ ] Tweak transition animation
 - [ ] Better UI
   - [x] Background
   - [ ] Icons
   - [ ] Juice
-    - [ ] Timer gets red when low on time (10 sec)
+    - [x] Timer gets red when low on time (10 sec)
     - [ ] Target counter pops when picking up a target
+  - [ ] Goal message with fade off
 - [ ] Better Menu
   - [x] Proper spacing
   - [ ] Popup on hover

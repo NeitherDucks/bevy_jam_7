@@ -332,11 +332,14 @@ fn setup_ui(mut commands: Commands, fonts: Res<Fonts>) {
 }
 
 fn update_ui(
-    mut timer_ui: Single<&mut Text, (With<TimerUi>, Without<TargetsUi>)>,
+    mut timer_ui: Single<(&mut Text, &mut TextColor), (With<TimerUi>, Without<TargetsUi>)>,
     mut targets_ui: Single<&mut Text, (With<TargetsUi>, Without<TimerUi>)>,
     game_state: Res<GameState>,
 ) {
-    timer_ui.0 = format!("{:.0}", game_state.timer.remaining_secs());
+    timer_ui.0.0 = format!("{:.0}", game_state.timer.remaining_secs());
+    if game_state.timer.remaining_secs() <= 10.0 {
+        timer_ui.1.0 = Color::linear_rgb(0.95, 0.05, 0.05);
+    }
     targets_ui.0 = format!(
         "{} / {}",
         game_state.aquired_targets, game_state.total_targets

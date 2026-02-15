@@ -253,7 +253,7 @@ fn apply_rotation(
 
     yaw += rotate.value.x.to_radians();
     pitch += rotate.value.y.to_radians();
-    pitch = pitch.clamp(-89.0f32.to_radians(), 89.0f32.to_radians());
+    pitch = pitch.clamp(3.0f32.to_radians(), 89.0f32.to_radians());
 
     anchor_y.rotation = Quat::from_euler(EulerRot::YXZ, yaw, 0.0, 0.0);
     anchor_x.rotation = Quat::from_euler(EulerRot::YXZ, 0.0, pitch, 0.0);
