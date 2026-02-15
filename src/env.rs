@@ -162,7 +162,7 @@ fn setup(
     commands.spawn((
         Name::new("NavMesh island"),
         DespawnOnExit(AppState::Playing),
-        Transform::IDENTITY,
+        Transform::from_xyz(0.0, 0.3, 0.0),
         Island3dBundle {
             island: Island,
             archipelago_ref: ArchipelagoRef3d::new(archipelago),
