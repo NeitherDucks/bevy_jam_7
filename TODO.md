@@ -19,7 +19,8 @@ In order
   - [x] Juice
     - [x] Timer gets red when low on time (10 sec)
     - [x] Target counter pops when picking up a target
-  - [ ] Goal message with fade off
+    - [x] Change timer font size instead of scaling the node
+  - [x] Goal message with fade off
 - [ ] Better Menu
   - [x] Proper spacing
   - [ ] Popup on hover
@@ -27,7 +28,7 @@ In order
 - [ ] Lights definition per levels (From blender?)
 - [x] Refactor Pickup and Target Hit with Events
 - [ ] SFX
-- [ ] Replace Powerup model
+- [x] Replace Powerup model
 - [ ] Finish level 1
 - [ ] Better Game over
   - [ ] Laser
@@ -57,7 +58,7 @@ BUGS:
 - [x] Restarting a game after loosing make the game crash
   - The game needs a proper reset procedure
 - [ ] Sometimes targets don't move (for longer than their idle time)
-- [ ] Powerup moves it's collider
+- [x] Powerup moves it's collider
 - [ ] Verlet chain stop updating when player is not moving
 
 REFACTOR:

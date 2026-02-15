@@ -1,10 +1,10 @@
 use std::time::Duration;
 
-use bevy::{prelude::*, time::common_conditions::on_timer};
+use bevy::{prelude::*, text::LineHeight, time::common_conditions::on_timer};
 use bevy_tweening::{AnimTarget, Lens, Tween, TweenAnim, lens::UiTransformScaleLens};
 
 use crate::{
-    loader::{LevelAssetHandles, LevelDef},
+    loader::{LevelAssetHandles, LevelDef, PermanentAssetHandles},
     menus::Fonts,
     physics::{MovementAcceleration, PlayerHitPowerup, PlayerHitTarget},
     player::{PLAYER_BOOST_SPEED, Player},
@@ -268,6 +268,18 @@ struct TargetsUi;
 struct GoalUi;
 
 #[derive(Debug, Copy, Clone, PartialEq)]
+pub struct UiFontSizeLens {
+    pub start: f32,
+    pub end: f32,
+}
+
+impl Lens<TextFont> for UiFontSizeLens {
+    fn lerp(&mut self, mut target: Mut<TextFont>, ratio: f32) {
+        target.font_size = self.start.lerp(self.end, ratio);
+    }
+}
+
+#[derive(Debug, Copy, Clone, PartialEq)]
 pub struct UiTextColorLens {
     /// Start position.
     pub start: Color,
@@ -298,6 +310,7 @@ impl Lens<TextShadow> for UiTextShadowColorLens {
 #[allow(clippy::too_many_lines)]
 fn setup_ui(mut commands: Commands, fonts: Res<Fonts>, level_def: Res<LevelDef>) {
     info!("Setting up UI");
+    // Targets
     commands.spawn((
         GlobalZIndex(-1),
         DespawnOnExit(AppState::Playing),
@@ -305,39 +318,37 @@ fn setup_ui(mut commands: Commands, fonts: Res<Fonts>, level_def: Res<LevelDef>)
             width: percent(100),
             ..Default::default()
         },
-        children![
-            // Targets
-            (
+        children![(
+            Node {
+                left: px(25),
+                top: px(25),
+                ..Default::default()
+            },
+            children![(
                 Node {
-                    left: px(25),
-                    top: px(25),
+                    padding: UiRect::all(px(10)),
+                    width: px(150),
+                    border_radius: BorderRadius::all(px(50)),
+                    justify_content: JustifyContent::Center,
                     ..Default::default()
                 },
+                BackgroundColor(Color::linear_rgba(0.0, 0.0, 0.0, 0.8)),
                 children![(
-                    Node {
-                        padding: UiRect::all(px(10)),
-                        width: px(150),
-                        border_radius: BorderRadius::all(px(50)),
-                        justify_content: JustifyContent::Center,
-                        ..Default::default()
+                    TargetsUi,
+                    Text::new(""),
+                    TextFont {
+                        font: fonts.blue_winter.clone(),
+                        font_size: 36.0,
+                        ..default()
                     },
-                    BackgroundColor(Color::linear_rgba(0.0, 0.0, 0.0, 0.8)),
-                    children![(
-                        TargetsUi,
-                        Text::new(""),
-                        TextFont {
-                            font: fonts.blue_winter.clone(),
-                            font_size: 36.0,
-                            ..default()
-                        },
-                        TextColor(Color::srgb(0.9, 0.9, 0.9)),
-                        TextShadow::default(),
-                    )],
-                )]
-            )
-        ],
+                    TextColor(Color::srgb(0.9, 0.9, 0.9)),
+                    TextShadow::default(),
+                )],
+            )]
+        )],
     ));
 
+    // Timer
     commands.spawn((
         GlobalZIndex(-1),
         DespawnOnExit(AppState::Playing),
@@ -345,39 +356,39 @@ fn setup_ui(mut commands: Commands, fonts: Res<Fonts>, level_def: Res<LevelDef>)
             width: percent(100),
             ..Default::default()
         },
-        children![
-            // Timer
-            (
+        children![(
+            Node {
+                margin: auto().horizontal(),
+                top: px(25),
+                ..Default::default()
+            },
+            children![(
                 Node {
-                    margin: auto().horizontal(),
-                    top: px(25),
+                    padding: UiRect::all(px(10)),
+                    width: px(200),
+                    height: px(82),
+                    border_radius: BorderRadius::all(px(50)),
+                    justify_content: JustifyContent::Center,
                     ..Default::default()
                 },
+                BackgroundColor(Color::linear_rgba(0.0, 0.0, 0.0, 0.8)),
                 children![(
-                    Node {
-                        padding: UiRect::all(px(10)),
-                        width: px(200),
-                        border_radius: BorderRadius::all(px(50)),
-                        justify_content: JustifyContent::Center,
-                        ..Default::default()
+                    TimerUi,
+                    Text::new(""),
+                    TextFont {
+                        font: fonts.blue_winter.clone(),
+                        font_size: 52.0,
+                        ..default()
                     },
-                    BackgroundColor(Color::linear_rgba(0.0, 0.0, 0.0, 0.8)),
-                    children![(
-                        TimerUi,
-                        Text::new(""),
-                        TextFont {
-                            font: fonts.blue_winter.clone(),
-                            font_size: 52.0,
-                            ..default()
-                        },
-                        TextColor(Color::srgb(0.9, 0.9, 0.9)),
-                        TextShadow::default(),
-                    )],
-                )]
-            )
-        ],
+                    LineHeight::RelativeToFont(1.0),
+                    TextColor(Color::srgb(0.9, 0.9, 0.9)),
+                    TextShadow::default(),
+                )],
+            )]
+        )],
     ));
 
+    // Goal text
     commands.spawn((
         GlobalZIndex(-1),
         DespawnOnExit(AppState::Playing),
@@ -460,9 +471,9 @@ fn update_ui(
                 .insert(TweenAnim::new(Tween::new(
                     EaseFunction::CubicIn,
                     Duration::from_secs(10),
-                    UiTransformScaleLens {
-                        start: Vec2::ONE,
-                        end: Vec2::splat(5.0),
+                    UiFontSizeLens {
+                        start: 52.0,
+                        end: 52.0 * 3.0,
                     },
                 )));
         }
@@ -485,7 +496,6 @@ fn update_ui(
                     end: Vec2::ONE,
                 },
             )
-            // .with_repeat_strategy(bevy_tweening::RepeatStrategy::MirroredRepeat)
             .with_repeat_count(1),
         ));
     }
@@ -543,7 +553,7 @@ fn spawn_powerup(
     player: Single<&Transform, With<Player>>,
     navmesh: Single<(Entity, &bevy_landmass::Archipelago3d)>,
     mut rng: Single<&mut bevy_prng::ChaCha20Rng, With<bevy_rand::global::GlobalRng>>,
-    handles: Res<LevelAssetHandles>,
+    permanent_handles: Res<PermanentAssetHandles>,
 ) {
     let mut iter = 0;
     let mut pos = Err(bevy_landmass::SamplePointError::OutOfRange);
@@ -562,7 +572,7 @@ fn spawn_powerup(
 
     info!("\t Powerup spawned!");
     commands.spawn(PowerupBundle::new(
-        SceneRoot(handles.target.clone()),
+        SceneRoot(permanent_handles.cheese.clone()),
         pos.point(),
         Name::new("Powerup"),
     ));

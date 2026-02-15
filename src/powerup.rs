@@ -90,7 +90,7 @@ fn tick_timers(
 
 fn animate(mut powerup: Query<(&mut Transform, &DespawnTimer), With<Powerup>>, time: Res<Time>) {
     for (mut transform, timer) in &mut powerup {
-        transform.translation.y = timer.0.elapsed_secs().sin() + 1.5;
+        transform.translation.y = (timer.0.elapsed_secs().sin() * 0.33) + 0.8;
         transform.rotate_local_y(5.0 * time.delta_secs());
     }
 }

@@ -122,6 +122,7 @@ impl FromWorld for PreLoadAssets {
 #[derive(Resource)]
 pub struct PermanentAssetHandles {
     pub player: Handle<Scene>,
+    pub cheese: Handle<Scene>,
 }
 
 impl PermanentAssetHandles {
@@ -163,6 +164,7 @@ fn load_assets(
         info!("Loading permanent assets");
         commands.insert_resource(PermanentAssetHandles {
             player: asset_server.load(GltfAssetLabel::Scene(0).from_asset("player.glb")),
+            cheese: asset_server.load(GltfAssetLabel::Scene(0).from_asset("cheese.glb")),
         });
 
         *once = true;
