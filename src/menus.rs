@@ -1,7 +1,10 @@
 use bevy::{input_focus::InputFocus, prelude::*};
 use bevy_inspector_egui::bevy_egui::{EguiContext, PrimaryEguiContext};
 
-use crate::game::{AppState, GameSettings, GameState, LoadingState, MenuState, PlayingState};
+use crate::{
+    game::{AppState, GameSettings, GameState, LoadingState, MenuState, PlayingState},
+    loader::PreLoadAssets,
+};
 
 const MENUS_BG_COLOR: BackgroundColor = BackgroundColor(Color::linear_rgba(0.05, 0.05, 0.08, 0.8));
 
@@ -70,7 +73,7 @@ fn setup(mut commands: Commands) {
 #[derive(Component)]
 struct MainMenuTag;
 
-fn setup_main_menu(mut commands: Commands, fonts: Res<Fonts>) {
+fn setup_main_menu(mut commands: Commands, fonts: Res<Fonts>, handles: Res<PreLoadAssets>) {
     commands.spawn((
         MainMenuTag,
         (
@@ -80,6 +83,10 @@ fn setup_main_menu(mut commands: Commands, fonts: Res<Fonts>) {
                 height: percent(100),
                 align_items: AlignItems::Center,
                 justify_content: JustifyContent::Center,
+                ..Default::default()
+            },
+            ImageNode {
+                image: handles.day_bg.clone(),
                 ..Default::default()
             },
             children![(
@@ -118,7 +125,12 @@ fn setup_main_menu(mut commands: Commands, fonts: Res<Fonts>) {
 #[derive(Component)]
 struct SettingsMenuTag;
 
-fn setup_settings_menu(mut commands: Commands, fonts: Res<Fonts>, settings: Res<GameSettings>) {
+fn setup_settings_menu(
+    mut commands: Commands,
+    fonts: Res<Fonts>,
+    settings: Res<GameSettings>,
+    handles: Res<PreLoadAssets>,
+) {
     commands.spawn((
         SettingsMenuTag,
         (
@@ -127,6 +139,10 @@ fn setup_settings_menu(mut commands: Commands, fonts: Res<Fonts>, settings: Res<
                 height: percent(100),
                 align_items: AlignItems::Center,
                 justify_content: JustifyContent::Center,
+                ..Default::default()
+            },
+            ImageNode {
+                image: handles.day_bg.clone(),
                 ..Default::default()
             },
             children![settings_ui(&fonts, &settings, UiEvents::MainMenuLocal)],
@@ -335,7 +351,12 @@ fn setup_pause_menu(mut commands: Commands, fonts: Res<Fonts>) {
 #[derive(Component)]
 struct ScoreMenuTag;
 
-fn setup_score_menu(mut commands: Commands, fonts: Res<Fonts>, game_state: Res<GameState>) {
+fn setup_score_menu(
+    mut commands: Commands,
+    fonts: Res<Fonts>,
+    game_state: Res<GameState>,
+    handles: Res<PreLoadAssets>,
+) {
     commands.spawn((
         ScoreMenuTag,
         DespawnOnExit(AppState::ScoreMenu),
@@ -347,13 +368,17 @@ fn setup_score_menu(mut commands: Commands, fonts: Res<Fonts>, game_state: Res<G
                 justify_content: JustifyContent::Center,
                 ..Default::default()
             },
+            ImageNode {
+                image: handles.night_bg.clone(),
+                ..Default::default()
+            },
             children![(
                 Node {
                     width: percent(50),
-                    height: percent(40),
+                    height: percent(70),
                     flex_direction: FlexDirection::Column,
                     align_items: AlignItems::Center,
-                    justify_content: JustifyContent::SpaceBetween,
+                    justify_content: JustifyContent::Center,
                     ..Default::default()
                 },
                 children![
@@ -364,6 +389,7 @@ fn setup_score_menu(mut commands: Commands, fonts: Res<Fonts>, game_state: Res<G
                         36.0
                     ),
                     text("(probably)", fonts.blue_winter.clone(), 24.0),
+                    padding(UiRect::bottom(px(48))),
                     button(
                         "Skip day",
                         fonts.blue_winter.clone(),

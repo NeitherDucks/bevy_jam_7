@@ -243,7 +243,6 @@ fn apply_rotation(
     mut anchor_x: Single<&mut Transform, (With<PlayerCameraAnchorX>, Without<PlayerCameraAnchorY>)>,
     cursor_options: Single<&CursorOptions>,
 ) {
-    // TODO: Camera-Ground interaction
     if cursor_options.visible {
         return;
     }

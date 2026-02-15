@@ -92,6 +92,8 @@ pub struct PreLoadAssets {
     pub eye_animation_graph: Handle<AnimationGraph>,
     pub eye_close: AnimationNodeIndex,
     pub eye_open: AnimationNodeIndex,
+    pub day_bg: Handle<Image>,
+    pub night_bg: Handle<Image>,
 }
 
 impl FromWorld for PreLoadAssets {
@@ -99,6 +101,8 @@ impl FromWorld for PreLoadAssets {
         let asset_server = world.get_resource::<AssetServer>().unwrap();
 
         let eye = asset_server.load(GltfAssetLabel::Scene(0).from_asset("eye.glb"));
+        let day_bg = asset_server.load("day.png");
+        let night_bg = asset_server.load("night.png");
 
         let (graph, indices) = AnimationGraph::from_clips([
             asset_server.load(GltfAssetLabel::Animation(0).from_asset("eye.glb")),
@@ -115,6 +119,8 @@ impl FromWorld for PreLoadAssets {
             eye_animation_graph,
             eye_close: indices[0],
             eye_open: indices[1],
+            day_bg,
+            night_bg,
         }
     }
 }

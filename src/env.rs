@@ -4,6 +4,7 @@ use avian_rerecast::prelude::*;
 use avian3d::prelude::*;
 use bevy::{
     gltf::{GltfMesh, GltfNode},
+    light::CascadeShadowConfigBuilder,
     prelude::*,
     time::common_conditions::on_timer,
 };
@@ -146,6 +147,12 @@ fn setup(
             shadows_enabled: true,
             ..Default::default()
         },
+        CascadeShadowConfigBuilder {
+            first_cascade_far_bound: 200.0,
+            maximum_distance: 400.0,
+            ..default()
+        }
+        .build(),
         Transform::from_xyz(0.0, 10.0, 5.0).looking_at(Vec3::ZERO, Vec3::Y),
         DespawnOnExit(AppState::Playing),
     ));
