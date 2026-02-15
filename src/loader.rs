@@ -44,7 +44,8 @@ struct LevelShuffle {
 
 #[derive(Resource, Clone, Copy)]
 pub struct LevelDef {
-    prefix: &'static str,
+    pub prefix: &'static str,
+    pub goal: &'static str,
     pub target_behavior: TargetBehavior,
     pub god_behavior: GodBehavior,
 }
@@ -52,12 +53,14 @@ pub struct LevelDef {
 impl LevelDef {
     const MICE: LevelDef = LevelDef {
         prefix: "mice",
+        goal: "Mice for the Cat-God",
         target_behavior: TargetBehavior::Mice,
         god_behavior: GodBehavior::Cat,
     };
 
     // const SKELETON: LevelDef = LevelDef {
     //     prefix: "skel",
+    //     goal: "Bones for the Necromancer-God",
     //     target_behavior: TargetBehavior::Skeleton,
     //     god_behavior: GodBehavior::Necromencer,
     // };

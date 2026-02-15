@@ -1,7 +1,7 @@
 use std::time::Duration;
 
 use bevy::{prelude::*, time::common_conditions::on_timer};
-use bevy_tweening::{Tween, TweenAnim, lens::UiTransformScaleLens};
+use bevy_tweening::{AnimTarget, Lens, Tween, TweenAnim, lens::UiTransformScaleLens};
 
 use crate::{
     loader::{LevelAssetHandles, LevelDef},
@@ -41,6 +41,10 @@ impl Plugin for GamePlugin {
                 )
                     .run_if(in_state(PlayingState::Playing)),
             )
+            .add_systems(OnTransition {
+                exited: PlayingState::Starting,
+                entered: PlayingState::Playing,
+            }, fade_goal_text)
             .add_systems(OnEnter(PlayingState::GameOver), game_over)
             .add_observer(on_player_hit_powerup)
             .add_observer(on_player_hit_target)
@@ -250,7 +254,39 @@ struct TimerUi;
 #[derive(Component)]
 struct TargetsUi;
 
-fn setup_ui(mut commands: Commands, fonts: Res<Fonts>) {
+#[derive(Component)]
+struct GoalUi;
+
+#[derive(Debug, Copy, Clone, PartialEq)]
+pub struct UiTextColorLens {
+    /// Start position.
+    pub start: Color,
+    /// End position.
+    pub end: Color,
+}
+
+impl Lens<TextColor> for UiTextColorLens {
+    fn lerp(&mut self, mut target: Mut<TextColor>, ratio: f32) {
+        target.0 = self.start.mix(&self.end, ratio);
+    }
+}
+
+#[derive(Debug, Copy, Clone, PartialEq)]
+pub struct UiTextShadowColorLens {
+    /// Start position.
+    pub start: Color,
+    /// End position.
+    pub end: Color,
+}
+
+impl Lens<TextShadow> for UiTextShadowColorLens {
+    fn lerp(&mut self, mut target: Mut<TextShadow>, ratio: f32) {
+        target.color = self.start.mix(&self.end, ratio);
+    }
+}
+
+#[allow(clippy::too_many_lines)]
+fn setup_ui(mut commands: Commands, fonts: Res<Fonts>, level_def: Res<LevelDef>) {
     info!("Setting up UI");
     commands.spawn((
         GlobalZIndex(-1),
@@ -291,6 +327,7 @@ fn setup_ui(mut commands: Commands, fonts: Res<Fonts>) {
             )
         ],
     ));
+
     commands.spawn((
         GlobalZIndex(-1),
         DespawnOnExit(AppState::Playing),
@@ -329,6 +366,68 @@ fn setup_ui(mut commands: Commands, fonts: Res<Fonts>) {
                 )]
             )
         ],
+    ));
+
+    commands.spawn((
+        GlobalZIndex(-1),
+        DespawnOnExit(AppState::Playing),
+        Node {
+            width: percent(100),
+            height: percent(100),
+            ..Default::default()
+        },
+        children![
+            // Timer
+            (
+                Node {
+                    margin: auto().all(),
+                    ..Default::default()
+                },
+                children![(
+                    Node {
+                        padding: UiRect::all(px(10)),
+                        justify_content: JustifyContent::Center,
+                        ..Default::default()
+                    },
+                    children![(
+                        GoalUi,
+                        Text::new(level_def.goal),
+                        TextFont {
+                            font: fonts.blue_winter.clone(),
+                            font_size: 56.0,
+                            ..default()
+                        },
+                        TextColor(Color::srgb(0.9, 0.9, 0.9)),
+                        TextShadow::default(),
+                    )],
+                )],
+            )
+        ],
+    ));
+}
+
+fn fade_goal_text(mut commands: Commands, text: Single<Entity, With<GoalUi>>) {
+    commands.spawn((
+        TweenAnim::new(Tween::new(
+            EaseFunction::CubicOut,
+            Duration::from_secs(5),
+            UiTextColorLens {
+                start: Color::srgba(0.9, 0.9, 0.9, 1.0),
+                end: Color::srgba(0.9, 0.9, 0.9, 0.0),
+            },
+        )),
+        AnimTarget::component::<TextColor>(*text),
+    ));
+    commands.spawn((
+        TweenAnim::new(Tween::new(
+            EaseFunction::CubicOut,
+            Duration::from_secs(5),
+            UiTextShadowColorLens {
+                start: Color::srgba(0.0, 0.0, 0.0, 0.75),
+                end: Color::srgba(0.9, 0.9, 0.9, 0.0),
+            },
+        )),
+        AnimTarget::component::<TextShadow>(*text),
     ));
 }
 
