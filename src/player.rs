@@ -17,7 +17,7 @@ use crate::{
 pub const PLAYER_DEFAULT_SPEED: f32 = 10.0;
 pub const PLAYER_BOOST_SPEED: f32 = PLAYER_DEFAULT_SPEED * 2.0;
 pub const PLAYER_SPEED_FACTOR: f32 = 1.0 / PLAYER_DEFAULT_SPEED;
-pub const JUMP_IMPULSE: f32 = 5.0;
+pub const JUMP_IMPULSE: f32 = 25.0;
 
 pub struct PlayerPlugin;
 
@@ -183,7 +183,10 @@ struct Rotate;
 
 #[derive(InputAction)]
 #[action_output(bool)]
-struct Jump;
+pub struct Jump;
+
+#[derive(Event)]
+pub struct PlayerJump;
 
 #[derive(InputAction)]
 #[action_output(bool)]
@@ -259,13 +262,16 @@ fn apply_rotation(
 }
 
 fn apply_jump(
-    _: On<Fire<Jump>>,
+    _: On<Start<Jump>>,
+    mut commands: Commands,
     player: Single<(&mut LinearVelocity, Has<Grounded>), With<Player>>,
 ) {
     let (mut velocity, is_grounded) = player.into_inner();
 
     if is_grounded {
+        info!("Player jumped");
         velocity.y += JUMP_IMPULSE;
+        commands.trigger(PlayerJump);
     }
 }
 

@@ -4,14 +4,14 @@ use bevy::{
     render::render_resource::TextureFormat,
     ui::FocusPolicy,
 };
-use bevy_prng::ChaCha20Rng;
 use bevy_rerecast::Navmesh;
-use rand::seq::SliceRandom;
+use bevy_seedling::sample::AudioSample;
 
 use crate::{
     anim::{IgnorePlayingState, PlayAnimation},
     game::{AppState, LoadingState, PlayingState},
     god::GodBehavior,
+    shuffle::Shuffle,
     target::TargetBehavior,
 };
 
@@ -22,7 +22,7 @@ impl Plugin for LoaderPlugin {
         app.register_type::<PreLoadAssets>()
             .init_resource::<PreLoadAssets>()
             // .insert_resource(LevelShuffle::new(&[LevelDef::MICE, LevelDef::SKELETON]))
-            .insert_resource(LevelShuffle::new(&[LevelDef::MICE]))
+            .insert_resource(Shuffle::new(&[LevelDef::MICE]))
             .add_systems(Startup, setup_eye)
             .add_systems(OnEnter(LoadingState::TransitionIn), animation_in)
             .add_systems(OnEnter(LoadingState::Waiting), load_assets)
@@ -36,18 +36,13 @@ impl Plugin for LoaderPlugin {
     }
 }
 
-#[derive(Resource)]
-struct LevelShuffle {
-    default: Vec<LevelDef>,
-    remaining: Vec<LevelDef>,
-}
-
 #[derive(Resource, Clone, Copy)]
 pub struct LevelDef {
     pub prefix: &'static str,
     pub goal: &'static str,
     pub target_behavior: TargetBehavior,
     pub god_behavior: GodBehavior,
+    pub musics: [&'static str; 3],
 }
 
 impl LevelDef {
@@ -56,6 +51,11 @@ impl LevelDef {
         goal: "Mice for the Cat-God",
         target_behavior: TargetBehavior::Mice,
         god_behavior: GodBehavior::Cat,
+        musics: [
+            "apple_cider-zane_little_music.ogg",
+            "nature_sketch-remaxim.ogg",
+            "the_secret_within_the_silent_woods-hitctrl.ogg",
+        ],
     };
 
     // const SKELETON: LevelDef = LevelDef {
@@ -66,23 +66,16 @@ impl LevelDef {
     // };
 }
 
-impl LevelShuffle {
-    fn new(levels: &[LevelDef]) -> Self {
-        debug_assert!(!levels.is_empty(), "Levels must not be empty");
+#[derive(Resource)]
+pub struct Fonts {
+    pub blue_winter: Handle<Font>,
+}
 
-        LevelShuffle {
-            default: Vec::from(levels),
-            remaining: Vec::from(levels),
+impl FromWorld for Fonts {
+    fn from_world(world: &mut World) -> Self {
+        Fonts {
+            blue_winter: world.load_asset("fonts/blue_winter.ttf"),
         }
-    }
-
-    fn next(&mut self, rng: &mut ChaCha20Rng) -> LevelDef {
-        if self.remaining.is_empty() {
-            self.remaining = self.default.clone();
-        }
-
-        self.remaining.shuffle(rng);
-        self.remaining.pop().unwrap()
     }
 }
 
@@ -94,19 +87,21 @@ pub struct PreLoadAssets {
     pub eye_open: AnimationNodeIndex,
     pub day_bg: Handle<Image>,
     pub night_bg: Handle<Image>,
+    pub button_sound: Handle<AudioSample>,
 }
 
 impl FromWorld for PreLoadAssets {
     fn from_world(world: &mut World) -> Self {
         let asset_server = world.get_resource::<AssetServer>().unwrap();
 
-        let eye = asset_server.load(GltfAssetLabel::Scene(0).from_asset("eye.glb"));
-        let day_bg = asset_server.load("day.png");
-        let night_bg = asset_server.load("night.png");
+        let eye = asset_server.load(GltfAssetLabel::Scene(0).from_asset("models/eye.glb"));
+        let day_bg = asset_server.load("textures/day.png");
+        let night_bg = asset_server.load("textures/night.png");
+        let button_sound = asset_server.load("sfx/button.wav");
 
         let (graph, indices) = AnimationGraph::from_clips([
-            asset_server.load(GltfAssetLabel::Animation(0).from_asset("eye.glb")),
-            asset_server.load(GltfAssetLabel::Animation(1).from_asset("eye.glb")),
+            asset_server.load(GltfAssetLabel::Animation(0).from_asset("models/eye.glb")),
+            asset_server.load(GltfAssetLabel::Animation(1).from_asset("models/eye.glb")),
         ]);
 
         let eye_animation_graph = world
@@ -121,6 +116,7 @@ impl FromWorld for PreLoadAssets {
             eye_open: indices[1],
             day_bg,
             night_bg,
+            button_sound,
         }
     }
 }
@@ -129,11 +125,22 @@ impl FromWorld for PreLoadAssets {
 pub struct PermanentAssetHandles {
     pub player: Handle<Scene>,
     pub cheese: Handle<Scene>,
+    pub jump_sound: Handle<AudioSample>,
+    pub powerup_sound: Handle<AudioSample>,
+    pub target_sound: Handle<AudioSample>,
+    pub laser_sound: Handle<AudioSample>,
 }
 
 impl PermanentAssetHandles {
     fn are_loaded(&self, asset_server: &AssetServer) -> bool {
-        let handles = [self.player.clone().untyped()];
+        let handles = [
+            self.player.clone().untyped(),
+            self.cheese.clone().untyped(),
+            self.jump_sound.clone().untyped(),
+            self.powerup_sound.clone().untyped(),
+            self.target_sound.clone().untyped(),
+            self.laser_sound.clone().untyped(),
+        ];
 
         handles.iter().all(|h| asset_server.is_loaded(h.id()))
     }
@@ -145,6 +152,7 @@ pub struct LevelAssetHandles {
     pub navmesh: Handle<Navmesh>,
     pub target: Handle<Scene>,
     pub god: Handle<Scene>,
+    pub musics: Shuffle<Handle<AudioSample>>,
 }
 
 impl LevelAssetHandles {
@@ -162,15 +170,19 @@ impl LevelAssetHandles {
 fn load_assets(
     mut commands: Commands,
     asset_server: Res<AssetServer>,
-    mut level_shuffle: ResMut<LevelShuffle>,
+    mut level_shuffle: ResMut<Shuffle<LevelDef>>,
     mut rng: Single<&mut bevy_prng::ChaCha20Rng, With<bevy_rand::global::GlobalRng>>,
     mut once: Local<bool>,
 ) {
     if !*once {
         info!("Loading permanent assets");
         commands.insert_resource(PermanentAssetHandles {
-            player: asset_server.load(GltfAssetLabel::Scene(0).from_asset("player.glb")),
-            cheese: asset_server.load(GltfAssetLabel::Scene(0).from_asset("cheese.glb")),
+            player: asset_server.load(GltfAssetLabel::Scene(0).from_asset("models/player.glb")),
+            cheese: asset_server.load(GltfAssetLabel::Scene(0).from_asset("models/cheese.glb")),
+            jump_sound: asset_server.load("sfx/jump.wav"),
+            powerup_sound: asset_server.load("sfx/powerup.wav"),
+            target_sound: asset_server.load("sfx/target.wav"),
+            laser_sound: asset_server.load("sfx/laser.wav"),
         });
 
         *once = true;
@@ -182,16 +194,25 @@ fn load_assets(
     commands.insert_resource(level_def);
 
     info!("Loading level");
-    let env_path = format!("{}_env.glb", level_def.prefix);
-    let nav_path = format!("{}_nav.nav", level_def.prefix);
-    let tar_path = format!("{}_tar.glb", level_def.prefix);
-    let god_path = format!("{}_god.glb", level_def.prefix);
+    let env_path = format!("levels/{}/environment.glb", level_def.prefix);
+    let nav_path = format!("levels/{}/navmesh.nav", level_def.prefix);
+    let tar_path = format!("levels/{}/target.glb", level_def.prefix);
+    let god_path = format!("levels/{}/god.glb", level_def.prefix);
+
+    let musics = level_def
+        .musics
+        .iter()
+        .map(|music| {
+            asset_server.load::<AudioSample>(format!("music/{}/{}", level_def.prefix, music))
+        })
+        .collect::<Vec<_>>();
 
     commands.insert_resource(LevelAssetHandles {
         environment: asset_server.load(env_path),
         navmesh: asset_server.load(nav_path),
         target: asset_server.load(GltfAssetLabel::Scene(0).from_asset(tar_path)),
         god: asset_server.load(GltfAssetLabel::Scene(0).from_asset(god_path)),
+        musics: Shuffle::new(&musics),
     });
 }
 
@@ -221,10 +242,10 @@ pub struct EyeCamera;
 struct Eye;
 
 #[derive(Component, Event)]
-struct EyeOpen;
+struct EyeOpening;
 
 #[derive(Component, Event)]
-struct EyeClosed;
+struct EyeClosing;
 
 const EYE_RENDER_LAYER: RenderLayers = RenderLayers::layer(1);
 
@@ -280,7 +301,7 @@ fn animation_in(mut commands: Commands, assets: Res<PreLoadAssets>) {
     // Spawn Eye
     commands.spawn((
         Eye,
-        EyeClosed,
+        EyeClosing,
         SceneRoot(assets.eye.clone()),
         PlayAnimation {
             graph: assets.eye_animation_graph.clone(),
@@ -305,51 +326,44 @@ fn animation_out(
     eye: Single<Entity, With<Eye>>,
     assets: Res<PreLoadAssets>,
 ) {
-    commands
-        .entity(*eye)
-        .insert((
-            EyeOpen,
-            PlayAnimation {
-                graph: assets.eye_animation_graph.clone(),
-                index: assets.eye_open,
-            },
-            IgnorePlayingState,
-        ))
-        .remove::<EyeClosed>();
+    commands.entity(*eye).insert((
+        EyeOpening,
+        PlayAnimation {
+            graph: assets.eye_animation_graph.clone(),
+            index: assets.eye_open,
+        },
+        IgnorePlayingState,
+    ));
 }
 
 fn check_animation_finished(
     mut commands: Commands,
     players: Query<(Entity, &AnimationPlayer)>,
     child_of: Query<&ChildOf>,
-    open: Query<Entity, With<EyeOpen>>,
-    closed: Query<Entity, With<EyeClosed>>,
+    eye: Single<(Entity, Has<EyeOpening>, Has<EyeClosing>), With<Eye>>,
 ) {
-    for (entity, player) in &players {
-        if player.all_finished() {
-            if child_of
-                .iter_ancestors(entity)
-                .any(|parent| open.contains(parent))
-            {
-                commands.trigger(EyeOpen);
-            }
+    let (eye, is_opening, is_closing) = eye.into_inner();
 
-            if child_of
-                .iter_ancestors(entity)
-                .any(|parent| closed.contains(parent))
-            {
-                commands.trigger(EyeClosed);
+    for (entity, player) in &players {
+        if player.all_finished() && child_of.iter_ancestors(entity).any(|parent| eye == parent) {
+            if is_opening {
+                commands.trigger(EyeOpening);
+                commands.entity(eye).remove::<EyeOpening>();
+            } else if is_closing {
+                commands.trigger(EyeClosing);
+                commands.entity(eye).remove::<EyeClosing>();
             }
         }
     }
 }
 
-fn transition_in_finished(_: On<EyeClosed>, mut next_state: ResMut<NextState<LoadingState>>) {
+fn transition_in_finished(_: On<EyeClosing>, mut next_state: ResMut<NextState<LoadingState>>) {
+    warn!("Eye closed");
     next_state.set(LoadingState::Waiting);
 }
 
 fn transition_out_finished(
-    _: On<EyeOpen>,
+    _: On<EyeOpening>,
     mut commands: Commands,
     eye: Single<Entity, With<Eye>>,
     mut next_state: ResMut<NextState<PlayingState>>,

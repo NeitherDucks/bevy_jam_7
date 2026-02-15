@@ -20,7 +20,6 @@ In order
     - [x] Timer gets red when low on time (10 sec)
     - [x] Target counter pops when picking up a target
     - [x] Change timer font size instead of scaling the node
-    - [ ] Add shake on timer when low (similar to scaling)
   - [x] Goal message with fade off
 - [ ] Better Menu
   - [x] Proper spacing
@@ -29,25 +28,34 @@ In order
 - [ ] Lights definition per levels (From blender?)
 - [x] Refactor Pickup and Target Hit with Events
 - [ ] SFX
+  - [x] Target pickup
+  - [x] Powerup pickup
+  - [x] Jump
+  - [ ] Laser
+  - [x] Menu button
 - [x] Replace Powerup model
 - [ ] Finish level 1
 - [ ] Refactor Transition (so we can use it elsewhere)
 - [ ] Better Game over
   - [ ] Laser
   - [ ] Transition
-  - [ ] High scores?
-- [ ] Better velocity alignment smoothing
 - [ ] Level 2 (Necromancer)
-- [ ] Music
+- [x] Music
 - [x] Main menu background
 - [x] Score menu background
 - [ ] Level 3 (Ducks)
-- [ ] Level 4 (??)
+- [ ] Level 4 (Crabs)
 - [x] Jump
 - [ ] Better Target AI
 - [x] Adjust shadow settings
+- [ ] Credits menu
 - [ ] Change rat tail to physics joints
 - [ ] Camera collisions / physics
+
+FIXES:
+- [ ] Normals on cheese
+- [ ] Player head follows Y velocity
+- [ ] Better velocity alignment smoothing
 
 BUGS:
 - [x] Something is wrong with how velocity is calculated / apply / interacts with controller

@@ -4,8 +4,7 @@ use bevy::{prelude::*, text::LineHeight, time::common_conditions::on_timer};
 use bevy_tweening::{AnimTarget, Lens, Tween, TweenAnim, lens::UiTransformScaleLens};
 
 use crate::{
-    loader::{LevelAssetHandles, LevelDef, PermanentAssetHandles},
-    menus::Fonts,
+    loader::{Fonts, LevelAssetHandles, LevelDef, PermanentAssetHandles},
     physics::{MovementAcceleration, PlayerHitPowerup, PlayerHitTarget},
     player::{PLAYER_BOOST_SPEED, Player},
     powerup::{PowerupBundle, PowerupTimer},

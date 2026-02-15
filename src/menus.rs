@@ -3,7 +3,7 @@ use bevy_inspector_egui::bevy_egui::{EguiContext, PrimaryEguiContext};
 
 use crate::{
     game::{AppState, GameSettings, GameState, LoadingState, MenuState, PlayingState},
-    loader::PreLoadAssets,
+    loader::{Fonts, PreLoadAssets},
 };
 
 const MENUS_BG_COLOR: BackgroundColor = BackgroundColor(Color::linear_rgba(0.05, 0.05, 0.08, 0.8));
@@ -39,19 +39,6 @@ impl Plugin for MenusPlugin {
 fn cleanup<T: Component>(mut commands: Commands, q: Query<Entity, With<T>>) {
     for entity in &q {
         commands.entity(entity).despawn();
-    }
-}
-
-#[derive(Resource)]
-pub struct Fonts {
-    pub blue_winter: Handle<Font>,
-}
-
-impl FromWorld for Fonts {
-    fn from_world(world: &mut World) -> Self {
-        Fonts {
-            blue_winter: world.load_asset("blue_winter.ttf"),
-        }
     }
 }
 
@@ -545,6 +532,9 @@ const NORMAL_BUTTON: Color = Color::srgb(0.15, 0.15, 0.15);
 const HOVERED_BUTTON: Color = Color::srgb(0.25, 0.25, 0.25);
 const PRESSED_BUTTON: Color = Color::srgb(0.35, 0.35, 0.35);
 
+#[derive(Event)]
+pub struct ButtonClicked;
+
 fn button_system(
     mut commands: Commands,
     mut input_focus: ResMut<InputFocus>,
@@ -588,6 +578,8 @@ fn button_system(
                     UiEvents::PlayingSettings => next_playing_state.set(PlayingState::SettingsMenu),
                     UiEvents::Pause => next_playing_state.set(PlayingState::Paused),
                 }
+
+                commands.trigger(ButtonClicked);
             }
             Interaction::Hovered => {
                 input_focus.set(entity);

@@ -1,4 +1,5 @@
 pub mod anim;
+pub mod audio;
 pub mod env;
 pub mod game;
 pub mod god;
@@ -7,6 +8,7 @@ pub mod menus;
 pub mod physics;
 pub mod player;
 pub mod powerup;
+pub mod shuffle;
 pub mod target;
 
 use bevy::{asset::AssetMetaCheck, prelude::*};
@@ -20,6 +22,7 @@ fn main() {
         }),
         bevy_framepace::FramepacePlugin,
         bevy_rand::prelude::EntropyPlugin::<bevy_prng::ChaCha20Rng>::default(),
+        audio::AudioPlugin,
         loader::LoaderPlugin,
         physics::PhysicsPlugin,
         env::EnvironmentPlugin,
