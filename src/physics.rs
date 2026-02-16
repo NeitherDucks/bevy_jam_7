@@ -14,8 +14,8 @@ impl Plugin for PhysicsPlugin {
     fn build(&self, app: &mut bevy::app::App) {
         app.add_plugins(PhysicsPlugins::default());
 
-        #[cfg(feature = "dev")]
-        app.add_plugins(avian3d::debug_render::PhysicsDebugPlugin);
+        // #[cfg(feature = "dev")]
+        // app.add_plugins(avian3d::debug_render::PhysicsDebugPlugin);
 
         app.add_systems(Startup, disable_physics)
             .add_systems(OnEnter(PlayingState::Playing), enable_physics)
@@ -84,7 +84,9 @@ fn run_move_and_slide(
     for (entity, mut transform, mut lin_vel, collider, is_player) in query {
         let mut velocity = lin_vel.0;
 
-        velocity.y += -9.8 * 5.0 * time.delta_secs();
+        if is_player {
+            velocity.y += -9.8 * 5.0 * time.delta_secs();
+        }
 
         let MoveAndSlideOutput {
             position,

@@ -55,14 +55,14 @@ fn setup(
 ) {
     // info!("Spawning environment");
 
-    commands.spawn((
-        InheritedVisibility::HIDDEN,
-        Transform::IDENTITY,
-        DespawnOnExit(AppState::Playing),
-        Name::new("Groud plane"),
-        RigidBody::Static,
-        Collider::half_space(Vec3::Y),
-    ));
+    // commands.spawn((
+    //     InheritedVisibility::HIDDEN,
+    //     Transform::IDENTITY,
+    //     DespawnOnExit(AppState::Playing),
+    //     Name::new("Groud plane"),
+    //     RigidBody::Static,
+    //     Collider::half_space(Vec3::Y),
+    // ));
 
     let gltf = gltf.get(handles.environment.id()).unwrap();
 
@@ -95,13 +95,17 @@ fn setup(
                     && let Some(mesh) = gltf_meshes.get(handle.id())
                 {
                     for prim in &mesh.primitives {
-                        let (col, hide) = if let Some(extras) = &mesh.extras {
-                            (extras.value.contains("col"), extras.value.contains("hide"))
+                        let (col, hide, col_tri) = if let Some(extras) = &mesh.extras {
+                            (
+                                extras.value.contains("col"),
+                                extras.value.contains("hide"),
+                                extras.value.contains("col_tri"),
+                            )
                         } else {
-                            (false, false)
+                            (false, false, false)
                         };
 
-                        new_meshes.push((&prim.mesh, transform, &prim.name, col, hide));
+                        new_meshes.push((&prim.mesh, transform, &prim.name, col, hide, col_tri));
                     }
                 }
 
@@ -110,7 +114,7 @@ fn setup(
                 }
             }
 
-            for (handle_mesh, transform, name, col, hide) in new_meshes {
+            for (handle_mesh, transform, name, col, hide, col_tri) in new_meshes {
                 let Some(mesh) = meshes.get(handle_mesh.id()) else {
                     continue;
                 };
@@ -128,7 +132,11 @@ fn setup(
                     RigidBody::Static,
                 ));
 
-                if col {
+                if col_tri {
+                    entity.insert(
+                        Collider::trimesh_from_mesh_with_config(mesh, TrimeshFlags::all()).unwrap(),
+                    );
+                } else if col {
                     entity.insert(Collider::convex_decomposition_from_mesh(mesh).unwrap());
                 }
             }
@@ -162,7 +170,8 @@ fn setup(
     commands.spawn((
         Name::new("NavMesh island"),
         DespawnOnExit(AppState::Playing),
-        Transform::from_xyz(0.0, 0.3, 0.0),
+        Transform::from_xyz(0.0, 0.10, 0.0),
+        // Transform::IDENTITY,
         Island3dBundle {
             island: Island,
             archipelago_ref: ArchipelagoRef3d::new(archipelago),

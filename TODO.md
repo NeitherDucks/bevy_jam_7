@@ -56,6 +56,9 @@ FIXES:
 - [x] Normals on cheese
 - [x] Player head follows Y velocity
 - [x] Camera jump on load
+- [ ] Better target goal pick algo
+    - right now if the goal is on the edge of the navmesh, the targets will lock up most of the time
+- [ ] Transition at the end of a won round skip the transition in
 
 BUGS:
 - [x] Something is wrong with how velocity is calculated / apply / interacts with controller

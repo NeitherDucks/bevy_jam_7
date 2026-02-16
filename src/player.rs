@@ -44,16 +44,16 @@ fn setup(mut commands: Commands, handles: Res<PermanentAssetHandles>) {
     // info!("Spawning Player");
 
     let collider = Collider::capsule_endpoints(
-        0.35,
-        Vec3::new(0.0, 0.35 * 0.5, -0.2),
-        Vec3::new(0.0, 0.35 * 0.5, -1.0),
+        0.5,
+        Vec3::new(0.0, 0.5 * 0.5, -0.2),
+        Vec3::new(0.0, 0.5 * 0.5, -1.0),
     );
     let mut caster_shape = collider.clone();
     caster_shape.set_scale(Vec3::ONE * 0.99, 10);
 
     commands.spawn((
         DespawnOnExit(AppState::Playing),
-        Transform::from_xyz(0.0, 0.35 * 0.5, 0.0),
+        Transform::from_xyz(0.0, 0.5 * 0.5, 0.0),
         SceneRoot(handles.player.clone()),
         Name::new("Player"),
         Player,

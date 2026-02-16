@@ -2,6 +2,7 @@ use avian3d::prelude::*;
 use bevy::prelude::*;
 use bevy_landmass::{
     Agent, Agent3dBundle, AgentDesiredVelocity3d, AgentSettings, AgentTarget3d, ArchipelagoRef3d,
+    TargetReachedCondition,
 };
 
 use crate::{
@@ -59,6 +60,7 @@ pub struct TargetBundle {
     position_intergration: CustomPositionIntegration,
     marker: Target,
     agent: Agent3dBundle,
+    target_condition: TargetReachedCondition,
     idle: IdleTimer,
     name: Name,
     despawn: DespawnOnExit<AppState>,
@@ -87,12 +89,13 @@ impl TargetBundle {
             agent: Agent3dBundle {
                 agent: Agent::default(),
                 settings: AgentSettings {
-                    radius: 0.5,
-                    desired_speed: 30.0,
-                    max_speed: 40.0,
+                    radius: 1.0,
+                    desired_speed: 40.0,
+                    max_speed: 60.0,
                 },
                 archipelago_ref: ArchipelagoRef3d::new(navmesh),
             },
+            target_condition: TargetReachedCondition::Distance(Some(5.0)),
             idle: IdleTimer::default(),
             name: Name::new("Target"),
             despawn: DespawnOnExit(AppState::Playing),
@@ -106,18 +109,15 @@ fn move_agents(
         Entity,
         &mut LinearVelocity,
         &MovementAcceleration,
-        &MovementDampingFactor,
         &AgentDesiredVelocity3d,
         Has<IdleTimer>,
     )>,
 ) {
-    for (entity, mut lin_vel, max_acceleration, damping, desired_vel, has_timer) in agent {
+    for (entity, mut lin_vel, max_acceleration, desired_vel, has_timer) in agent {
         lin_vel.0 = desired_vel.velocity().normalize_or_zero() * max_acceleration.current;
 
         let current_speed = lin_vel.length();
-        if current_speed > 1.0 {
-            lin_vel.0 *= 1.0 - damping.0;
-        } else {
+        if current_speed < 1.0 {
             lin_vel.0 = Vec3::ZERO;
 
             if !has_timer {
@@ -135,7 +135,7 @@ fn tick_idle_timers(
     for (entity, mut timer) in query {
         timer.0.tick(time.delta());
 
-        if timer.0.is_finished() {
+        if timer.0.just_finished() {
             commands
                 .entity(entity)
                 .remove::<IdleTimer>()
@@ -152,8 +152,9 @@ fn assign_new_target(
 ) {
     for (entity, transform) in query {
         let Ok(target) =
-            get_random_position_on_navmesh(transform.translation, 30.0, &navmesh, &mut rng)
+            get_random_position_on_navmesh(transform.translation, 80.0, &navmesh, &mut rng)
         else {
+            warn!("Could not get new target for {entity}");
             return;
         };
 

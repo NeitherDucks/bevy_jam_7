@@ -236,7 +236,7 @@ fn init_game(
         let mut pos = Err(bevy_landmass::SamplePointError::OutOfRange);
         while pos.is_err() && iter < 100 {
             iter += 1;
-            pos = get_random_position_on_navmesh(Vec3::ZERO, 135.0, navmesh.1, &mut rng);
+            pos = get_random_position_on_navmesh(Vec3::ZERO, 120.0, navmesh.1, &mut rng);
         }
 
         let pos = match pos {
@@ -626,10 +626,10 @@ pub fn get_random_position_on_navmesh<'a>(
         new_pos,
         &bevy_landmass::PointSampleDistance3d {
             horizontal_distance: radius * 0.5,
-            distance_above: 5.0,
-            distance_below: 5.0,
-            vertical_preference_ratio: -1.0,
-            animation_link_max_vertical_distance: 5.0,
+            distance_above: 20.0,
+            distance_below: 20.0,
+            vertical_preference_ratio: -5.0,
+            animation_link_max_vertical_distance: 20.0,
         },
     )
 }
