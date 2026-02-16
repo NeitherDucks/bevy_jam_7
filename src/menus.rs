@@ -1,4 +1,5 @@
 use bevy::{input_focus::InputFocus, prelude::*};
+#[cfg(feature = "dev")]
 use bevy_inspector_egui::bevy_egui::{EguiContext, PrimaryEguiContext};
 
 use crate::{
@@ -52,7 +53,9 @@ fn setup(mut commands: Commands) {
         },
         Name::new("UI Camera"),
         IsDefaultUiCamera,
+        #[cfg(feature = "dev")]
         EguiContext::default(),
+        #[cfg(feature = "dev")]
         PrimaryEguiContext,
     ));
 }

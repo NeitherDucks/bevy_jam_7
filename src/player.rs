@@ -80,7 +80,6 @@ fn setup(mut commands: Commands, handles: Res<PermanentAssetHandles>) {
             Player[(
                 Action::<Movement>::new(),
                 DeadZone::default(),
-                // SmoothNudge::default(),
                 Bindings::spawn((
                     Cardinal::wasd_keys(), Axial::left_stick()))
             ),
@@ -99,11 +98,11 @@ fn setup(mut commands: Commands, handles: Res<PermanentAssetHandles>) {
                 Action::<ToggleMenu>::new(),
                 bindings![KeyCode::Escape, GamepadButton::Start, GamepadButton::Select]
             ),
-            #[cfg(feature = "dev")]
-            (
-                Action::<DevToggleMouseGrab>::new(),
-                bindings![KeyCode::Tab]
-            )
+            // #[cfg(feature = "dev")]
+            // (
+            //     Action::<DevToggleMouseGrab>::new(),
+            //     bindings![KeyCode::Tab]
+            // )
             ]
         ),
         ContextActivity::<Player>::INACTIVE
