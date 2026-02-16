@@ -89,6 +89,7 @@ fn setup_main_menu(mut commands: Commands, fonts: Res<Fonts>, handles: Res<PreLo
                     row_gap: px(24),
                     ..Default::default()
                 },
+                #[cfg(not(feature = "web"))]
                 children![
                     title("Dreams for the Fever Gods", fonts.blue_winter.clone()),
                     button("Sleep", fonts.blue_winter.clone(), 300, 75, UiEvents::Play),
@@ -106,7 +107,19 @@ fn setup_main_menu(mut commands: Commands, fonts: Res<Fonts>, handles: Res<PreLo
                         50,
                         UiEvents::Quit
                     ),
-                ]
+                ],
+                #[cfg(feature = "web")]
+                children![
+                    title("Dreams for the Fever Gods", fonts.blue_winter.clone()),
+                    button("Sleep", fonts.blue_winter.clone(), 300, 75, UiEvents::Play),
+                    button(
+                        "Settings",
+                        fonts.blue_winter.clone(),
+                        250,
+                        63,
+                        UiEvents::Settings
+                    ),
+                ],
             )],
         ),
     ));

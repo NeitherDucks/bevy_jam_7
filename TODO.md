@@ -71,6 +71,7 @@ BUGS:
 - [x] Powerup moves it's collider
 - [ ] Verlet chain stop updating when player is not moving
 
+
 REFACTOR:
 - [ ] On<SceneInstanceReady>
 - [ ] children.iter_descendants(entity)

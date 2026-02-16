@@ -37,6 +37,9 @@ impl Plugin for PlayerPlugin {
             .add_observer(apply_jump)
             .add_observer(apply_toggle_menu)
             .add_observer(apply_toggle_cursor);
+
+        #[cfg(feature = "web")]
+        app.add_systems(Update, capture_cursor);
     }
 }
 
@@ -308,4 +311,31 @@ fn update_camera_pos(
 ) {
     // TODO: Slight lerp, so camera needs to catch up to the character
     anchor.translation = player.translation;
+}
+
+// Modified version of: https://github.com/bevyengine/bevy/issues/8949#issuecomment-2254364322
+#[cfg(feature = "web")]
+fn capture_cursor(
+    mut cursor_options: Single<&mut CursorOptions>,
+    grab: Res<GrabMousePlease>,
+    mouse_button_input: Res<ButtonInput<MouseButton>>,
+) {
+    if !grab.0 {
+        return;
+    }
+
+    // Because Bevy caches the last `grab_mode`,
+    // this does *not* permanently lock the cursor when running on `Update`.
+    // In other words, the user can still press `Esc` to unlock the cursor in web
+    // even when this runs every frame.
+    // When pressing `Esc`, the `grab_mode` does not change: <https://github.com/bevyengine/bevy/issues/8949>
+    cursor_options.grab_mode = CursorGrabMode::Locked;
+
+    // Check if the user has clicked into our window.
+    if mouse_button_input.just_pressed(MouseButton::Left) {
+        // Clear Bevy's grab mode cache by setting a different grab mode
+        // because an unlocked cursor will not update the current `CursorGrabMode`.
+        // The next `Update` frame will reset the `grab_mode` to `CursorGrabMode::Locked` again.
+        cursor_options.grab_mode = CursorGrabMode::Confined;
+    }
 }
