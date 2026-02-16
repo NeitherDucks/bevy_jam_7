@@ -8,7 +8,7 @@ use bevy_enhanced_input::prelude::*;
 // use bevy_landmass::Character3dBundle;
 
 use crate::{
-    game::{AppState, PlayingState, SetupState},
+    game::{AppState, GameSettings, PlayingState, SetupState},
     loader::PermanentAssetHandles,
     physics::{DAMP_FACTOR, Grounded, MaxSlopeAngle, MovementAcceleration, MovementDampingFactor},
     target::TargetBehavior,
@@ -244,6 +244,7 @@ fn apply_rotation(
     mut anchor_y: Single<&mut Transform, (With<PlayerCameraAnchorY>, Without<PlayerCameraAnchorX>)>,
     mut anchor_x: Single<&mut Transform, (With<PlayerCameraAnchorX>, Without<PlayerCameraAnchorY>)>,
     cursor_options: Single<&CursorOptions>,
+    settings: Res<GameSettings>,
 ) {
     if cursor_options.visible {
         return;
@@ -252,8 +253,8 @@ fn apply_rotation(
     let (mut yaw, _, _) = anchor_y.rotation.to_euler(EulerRot::YXZ);
     let (_, mut pitch, _) = anchor_x.rotation.to_euler(EulerRot::YXZ);
 
-    yaw += rotate.value.x.to_radians();
-    pitch += rotate.value.y.to_radians();
+    yaw += rotate.value.x.to_radians() * settings.camera_x_sensitivity;
+    pitch += rotate.value.y.to_radians() * settings.camera_y_sensitivity;
     pitch = pitch.clamp(3.0f32.to_radians(), 89.0f32.to_radians());
 
     anchor_y.rotation = Quat::from_euler(EulerRot::YXZ, yaw, 0.0, 0.0);
@@ -294,7 +295,7 @@ fn apply_toggle_cursor(
 
 fn grab_cursor(cursor_options: &mut CursorOptions, grab: bool) {
     cursor_options.grab_mode = if grab {
-        CursorGrabMode::Confined
+        CursorGrabMode::Locked
     } else {
         CursorGrabMode::None
     };

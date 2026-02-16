@@ -138,7 +138,7 @@ impl Default for GameSettings {
     fn default() -> Self {
         Self {
             camera_x_sensitivity: 1.0,
-            camera_y_sensitivity: 0.2,
+            camera_y_sensitivity: 1.0,
             music_volume: 50.0,
             sfx_volume: 50.0,
         }
