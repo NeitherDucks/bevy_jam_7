@@ -61,6 +61,7 @@ default = [
 ]
 native = [
     "bevy/wayland",
+    "bevy/x11",
 ]
 dev = [
     # Improve compile times for dev builds by linking Bevy as a dynamic library.
