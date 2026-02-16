@@ -1,6 +1,8 @@
 use avian3d::prelude::*;
 use bevy::{
+    core_pipeline::tonemapping::Tonemapping,
     platform::collections::HashSet,
+    // post_process::bloom::Bloom,
     prelude::*,
     window::{CursorGrabMode, CursorOptions},
 };
@@ -9,7 +11,7 @@ use bevy_enhanced_input::prelude::*;
 
 use crate::{
     game::{AppState, GameSettings, PlayingState, SetupState},
-    loader::PermanentAssetHandles,
+    loader::{LevelDef, PermanentAssetHandles},
     physics::{DAMP_FACTOR, Grounded, MaxSlopeAngle, MovementAcceleration, MovementDampingFactor},
     target::TargetBehavior,
 };
@@ -43,7 +45,7 @@ impl Plugin for PlayerPlugin {
     }
 }
 
-fn setup(mut commands: Commands, handles: Res<PermanentAssetHandles>) {
+fn setup(mut commands: Commands, handles: Res<PermanentAssetHandles>, level_def: Res<LevelDef>) {
     // info!("Spawning Player");
 
     let collider = Collider::capsule_endpoints(
@@ -123,6 +125,13 @@ fn setup(mut commands: Commands, handles: Res<PermanentAssetHandles>) {
                 Transform::from_xyz(0.0, 0.0, -20.0).looking_at(Vec3::ZERO, Vec3::Y),
                 Name::new("Player Camera"),
                 Camera3d::default(),
+                Camera {
+                    clear_color: ClearColorConfig::Custom(level_def.clear_color),
+                    ..Default::default()
+                },
+                Tonemapping::TonyMcMapface,
+                // Not sure why Bloom breaks my render
+                // Bloom::NATURAL,
                 PlayerCamera,
             )],
         )],

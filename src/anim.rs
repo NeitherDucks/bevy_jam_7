@@ -5,7 +5,7 @@ use bevy_tweening::TweeningPlugin;
 use crate::{
     game::{AppState, PlayingState, SetupState},
     physics::MovementAcceleration,
-    player::PLAYER_SPEED_FACTOR,
+    player::{PLAYER_SPEED_FACTOR, Player},
     target::TargetBehavior,
 };
 
@@ -15,12 +15,13 @@ impl Plugin for AnimPlugin {
     fn build(&self, app: &mut App) {
         app.add_plugins(TweeningPlugin)
             .register_type::<BoneChain>()
+            .register_type::<GodBone>()
             .add_systems(OnEnter(SetupState::Animation), setup_bone_chain)
             .add_systems(
                 Update,
                 (
                     on_play_animation,
-                    orient_to_vel.run_if(in_state(PlayingState::Playing)),
+                    (orient_to_vel, look_at_player).run_if(in_state(PlayingState::Playing)),
                 ),
             )
             .add_systems(
@@ -73,6 +74,9 @@ fn on_play_animation(
 // ------------------------------------------------------------------------------------------------------
 
 #[derive(Reflect, Component)]
+struct GodBone(Quat);
+
+#[derive(Reflect, Component)]
 struct MainBone(Entity, Quat);
 
 #[derive(Reflect, Component)]
@@ -87,6 +91,18 @@ fn setup_bone_chain(
     mut next_state: ResMut<NextState<AppState>>,
 ) {
     for (entity, name) in names {
+        if name.as_str() == "Bone.god" {
+            commands.entity(entity).insert(GodBone(
+                global_transforms
+                    .get(entity)
+                    .expect("Bones should already exists")
+                    .compute_transform()
+                    .rotation,
+            ));
+
+            continue;
+        }
+
         if name.as_str() != "Spine.001.rat" {
             continue;
         }
@@ -342,4 +358,11 @@ struct VerletPoint {
     previous: Vec3,
     rest_rotation: Quat,
     segment_length: f32,
+}
+
+fn look_at_player(
+    mut god: Single<(&mut Transform, &GodBone), Without<Player>>,
+    player: Single<&Transform, With<Player>>,
+) {
+    god.0.rotation = god.0.looking_at(player.translation, Vec3::Y).rotation * god.1.0;
 }

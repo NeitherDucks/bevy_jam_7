@@ -34,7 +34,7 @@ In order
   - [ ] Laser
   - [x] Menu button
 - [x] Replace Powerup model
-- [ ] Finish level 1
+- [x] Finish level 1
 - [x] Refactor Transition (so we can use it elsewhere)
 - [ ] Better Game over
   - [ ] Laser

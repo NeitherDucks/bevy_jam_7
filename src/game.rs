@@ -493,11 +493,13 @@ fn update_ui(
 ) {
     timer_ui.1.0 = format!("{:.0}", game_state.timer.remaining_secs());
     if game_state.timer.remaining_secs() <= 10.0 {
-        timer_ui.2.0 = Color::linear_rgb(0.95, 0.05, 0.05);
-
         if !*once {
             *once = true;
 
+            timer_ui.2.0 = Color::linear_rgb(0.95, 0.05, 0.05);
+
+            // Disabled for web as it seems to lag
+            #[cfg(not(feature = "web"))]
             commands
                 .entity(timer_ui.0)
                 .insert(TweenAnim::new(Tween::new(

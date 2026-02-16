@@ -142,6 +142,14 @@ fn setup(
             }
         });
 
+    commands.spawn((
+        InheritedVisibility::VISIBLE,
+        Transform::IDENTITY,
+        DespawnOnExit(AppState::Playing),
+        Name::new("God"),
+        SceneRoot(handles.god.clone()),
+    ));
+
     // Lights
     // info!("Spawning lights");
     commands.insert_resource(level_def.ambient_light.clone());

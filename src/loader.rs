@@ -32,6 +32,7 @@ pub struct LevelDef {
     pub ambient_light: GlobalAmbientLight,
     pub directional_light: DirectionalLight,
     pub directional_light_transform: Transform,
+    pub clear_color: Color,
 }
 
 impl LevelDef {
@@ -61,6 +62,7 @@ impl LevelDef {
         directional_light_transform: Transform::from_rotation(Quat::from_xyzw(
             -0.5257311, -0.0, -0.0, 0.85065085,
         )),
+        clear_color: Color::hsl(191.0, 0.83, 0.93),
     };
 
     // const SKELETON: LevelDef = LevelDef {
