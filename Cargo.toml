@@ -1,22 +1,8 @@
 [package]
 name = "jam7"
-version = "0.1.4"
+version = "0.1.5"
 edition = "2024"
 license = "MIT OR Apache-2.0 OR CC0-1.0"
-
-# Compile with Performance Optimizations:
-# https://bevyengine.org/learn/book/getting-started/setup/#compile-with-performance-optimizations
-
-# Enable a small amount of optimization in debug mode
-[profile.dev]
-opt-level = 1
-
-# Enable high optimizations for dependencies (incl. Bevy), but not for our code:
-[profile.dev.package."*"]
-opt-level = 3
-
-[profile.release.package.wgpu-types]
-debug-assertions = false
 
 [dependencies]
 bevy = { version = "0.18", default-features = false, features = [ "3d_bevy_render", "default_app", "default_platform", "scene", "ui_api", "ui_bevy_render", "tonemapping_luts"]}
@@ -64,6 +50,7 @@ native = [
     "bevy/x11",
 ]
 dev = [
+    "bevy/debug",
     # Improve compile times for dev builds by linking Bevy as a dynamic library.
     "bevy/dynamic_linking",
     "bevy/bevy_dev_tools",
@@ -90,6 +77,20 @@ release = []
 
 [target.wasm32-unknown-unknown.dependencies]
 getrandom = { version = "0.3", features = ["wasm_js"] }
+
+# Compile with Performance Optimizations:
+# https://bevyengine.org/learn/book/getting-started/setup/#compile-with-performance-optimizations
+
+[profile.release.package.wgpu-types]
+debug-assertions = false
+
+# Enable a small amount of optimization in debug mode
+[profile.dev]
+opt-level = 1
+
+# Enable high optimizations for dependencies (incl. Bevy), but not for our code:
+[profile.dev.package."*"]
+opt-level = 3
 
 [patch.crates-io]
 # Not released yet

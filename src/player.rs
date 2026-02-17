@@ -26,6 +26,7 @@ pub struct PlayerPlugin;
 impl Plugin for PlayerPlugin {
     fn build(&self, app: &mut App) {
         app.add_plugins(EnhancedInputPlugin)
+            .init_resource::<GrabMousePlease>()
             .add_input_context::<Player>()
             .add_systems(OnEnter(SetupState::Entities), setup)
             .add_systems(OnEnter(PlayingState::Playing), enable_controls)
@@ -207,7 +208,7 @@ struct DevToggleMouseGrab;
 #[action_output(bool)]
 struct ToggleMenu;
 
-#[derive(Resource)]
+#[derive(Default, Resource)]
 struct GrabMousePlease(bool);
 
 #[derive(Component)]
